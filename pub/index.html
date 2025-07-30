@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>视频在线播放</title>
+  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .container {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      display: none; 
+    }
+    .sidebar {
+      width: 280px;
+      background: #ffffff;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .sidebar-tabs {
+      display: flex;
+      background: #f8f9fa;
+      border-bottom: 1px solid #ddd;
+    }
+    .sidebar-tab {
+      flex: 1;
+      padding: 15px 10px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+      user-select: none;
+      position: relative;
+      z-index: 1;
+    }
+    .sidebar-tab:hover {
+      background-color: #e9ecef;
+    }
+    .sidebar-tab.active {
+      background-color: #ffffff;
+      border-bottom-color: #007bff;
+      color: #007bff;
+    }
+    .sidebar-content {
+      padding: 20px;
+      height: calc(100% - 60px);
+      overflow-y: auto;
+      position: relative;
+    }
+    .sidebar h2 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-size: 16px;
+      color: #333;
+    }
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      margin-bottom: 60px; /* 为添加按钮留出空间 */
+    }
+    .sidebar li {
+      padding: 12px 15px;
+      cursor: pointer;
+      border-radius: 6px;
+      margin-bottom: 5px;
+      transition: background-color 0.2s ease;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sidebar li:hover {
+      background-color: #e9ecef;
+    }
+    .sidebar li.active {
+      background-color: #007bff;
+      color: white;
+      font-weight: bold;
+    }
+    .series-name {
+      flex: 1;
+    }
+    .delete-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 14px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      margin-left: 10px;
+    }
+    .sidebar li:hover .delete-btn {
+      display: flex;
+    }
+    .delete-btn:hover {
+      background: #c82333;
+    }
+    .add-video-btn {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      height: 40px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s ease;
+    }
+    .add-video-btn:hover {
+      background: #218838;
+    }
+    .history-item {
+      padding: 10px;
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .history-item:hover {
+      border-color: #007bff;
+      background-color: #f8f9ff;
+    }
+    .history-title {
+      font-weight: bold;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .history-episode {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    .history-progress {
+      font-size: 12px;
+      color: #007bff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history-time {
+      color: #999;
+    }
+    .history-clear {
+      padding: 8px 16px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    .history-clear:hover {
+      background-color: #c82333;
+    }
+    .no-history {
+      text-align: center;
+      color: #999;
+      font-size: 14px;
+      padding: 20px;
+    }
+    .main-content {
+      flex-grow: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .player-container {
+      position: relative;
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
+      background: #000;
+    }
+    .video-js {
+      width: 100%;
+      height: 0;
+      padding-top: 56.25%;
+    }
+    .series-title {
+      text-align: center;
+      margin: 20px 0;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .episode-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 20px 0;
+      justify-content: flex-start;
+      max-width: 960px;
+      width: 100%;
+      margin: 0 auto 20px;
+    }
+    .episode-btn {
+      padding: 8px 15px;
+      border: 1px solid #ccc;
+      background-color: #fff;
+      color: #333;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .episode-btn:hover {
+      border-color: #007bff;
+      color: #007bff;
+    }
+    .episode-btn.active {
+      background-color: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+    .episode-delete {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .episode-btn:hover .episode-delete {
+      display: flex;
+    }
+    .add-episode-btn {
+      padding: 8px 15px;
+      border: 2px dashed #28a745;
+      background-color: transparent;
+      color: #28a745;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    .add-episode-btn:hover {
+      background-color: #28a745;
+      color: white;
+    }
+    #password-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.7); display: flex;
+      justify-content: center; align-items: center; z-index: 9999; display: none; 
+    }
+    .password-modal {
+      background: white; padding: 30px 40px; border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center;
+    }
+    .password-modal h2 { margin-top: 0; margin-bottom: 20px; color: #333; }
+    .password-modal input {
+      padding: 10px; width: 200px; border: 1px solid #ccc;
+      border-radius: 4px; font-size: 16px; margin-right: 10px;
+    }
+    .password-modal button {
+      padding: 10px 20px; font-size: 16px; cursor: pointer;
+      background-color: #007bff; color: white; border: none; border-radius: 4px;
+    }
+    .password-modal p.error { color: red; height: 20px; margin-top: 15px; margin-bottom: 0; }
+    
+    #restore-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      font-size: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      z-index: 10;
+      display: none;
+    }
+
+    /* 添加视频弹窗样式 */
+    #add-video-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9998;
+      display: none;
+    }
+    .add-video-modal {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 500px;
+    }
+    .add-video-modal h3 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: #333;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #333;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    .episode-inputs {
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 15px;
+      background: #f8f9fa;
+    }
+    .episode-inputs h4 {
+      margin: 0 0 15px 0;
+      color: #333;
+      font-size: 14px;
+    }
+    .episode-input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+    .episode-input-group input {
+      flex: 1;
+      margin-bottom: 0;
+    }
+    .remove-episode-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .add-episode-input-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    .modal-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .modal-buttons button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .btn-cancel {
+      background: #6c757d;
+      color: white;
+    }
+    .btn-save {
+      background: #007bff;
+      color: white;
+    }
+    .empty-state {
+      text-align: center;
+      color: #999;
+      font-size: 16px;
+      padding: 40px 20px;
+    }
+    .empty-state p {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="password-overlay">
+    <div class="password-modal">
+      <h2>请输入访问密码</h2>
+      <div>
+        <input type="password" id="password-input" placeholder="密码">
+        <button id="password-submit">进入</button>
+      </div>
+      <p id="password-error" class="error"></p>
+    </div>
+  </div>
+
+  <!-- 添加视频弹窗 -->
+  <div id="add-video-overlay">
+    <div class="add-video-modal">
+      <h3>添加视频系列</h3>
+      <form id="add-video-form">
+        <div class="form-group">
+          <label for="series-title-input">系列标题:</label>
+          <input type="text" id="series-title-input" placeholder="请输入视频系列标题" required>
+        </div>
+        
+        <div class="episode-inputs">
+          <h4>剧集列表:</h4>
+          <div id="episode-inputs-container">
+            <div class="episode-input-group">
+              <input type="text" placeholder="剧集名称 (如: 第1集)" required>
+              <input type="url" placeholder="视频地址 (http://... 或 https://...)" required>
+              <button type="button" class="remove-episode-btn" onclick="removeEpisodeInput(this)">-</button>
+            </div>
+          </div>
+          <button type="button" class="add-episode-input-btn" onclick="addEpisodeInput()">+ 添加剧集</button>
+        </div>
+        
+        <div class="modal-buttons">
+          <button type="button" class="btn-cancel" onclick="closeAddVideoModal()">取消</button>
+          <button type="submit" class="btn-save">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="sidebar">
+      <div class="sidebar-tabs">
+        <div class="sidebar-tab active" data-tab="series" onclick="switchTab('series')">视频列表</div>
+        <div class="sidebar-tab" data-tab="history" onclick="switchTab('history')">播放历史</div>
+      </div>
+      <div class="sidebar-content">
+        <div id="series-tab" class="tab-content" style="display: block;">
+          <h2>选择视频</h2>
+          <ul id="series-list"></ul>
+          <button class="add-video-btn" onclick="openAddVideoModal()">+ 添加视频</button>
+        </div>
+        <div id="history-tab" class="tab-content" style="display: none;">
+          <h2>播放历史</h2>
+          <div id="history-list"></div>
+          <button id="clear-history" class="history-clear">清除历史记录</button>
+        </div>
+      </div>
+    </div>
+    <div class="main-content">
+      <h1 id="series-title" class="series-title"></h1>
+      <div class="player-container">
+        <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto" playsinline webkit-playsinline></video>
+        <div id="restore-overlay"></div>
+      </div>
+      <div id="episode-list" class="episode-list"></div>
+      <div id="empty-state" class="empty-state" style="display: none;">
+        <p>还没有添加任何视频</p>
+        <p>点击左侧的"+ 添加视频"按钮开始添加视频系列</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+  <script>
+    // 全局变量
+    let seriesData = [];
+    let currentSeriesIndex = 0;
+    let currentEpisodeIndex = 0;
+
+    // 加载本地数据
+    function loadSeriesData() {
+      try {
+        const savedData = localStorage.getItem('videoSeriesData');
+        if (savedData) {
+          seriesData = JSON.parse(savedData);
+        }
+      } catch (e) {
+        console.error('加载视频数据失败:', e);
+        seriesData = [];
+      }
+    }
+
+    // 保存数据到本地
+    function saveSeriesData() {
+      try {
+        localStorage.setItem('videoSeriesData', JSON.stringify(seriesData));
+      } catch (e) {
+        console.error('保存视频数据失败:', e);
+      }
+    }
+
+    // 打开添加视频弹窗
+    function openAddVideoModal() {
+      document.getElementById('add-video-overlay').style.display = 'flex';
+      document.getElementById('series-title-input').focus();
+    }
+
+    // 关闭添加视频弹窗
+    function closeAddVideoModal() {
+      document.getElementById('add-video-overlay').style.display = 'none';
+      document.getElementById('add-video-form').reset();
+      // 重置剧集输入
+      const container = document.getElementById('episode-inputs-container');
+      container.innerHTML = `
+        <div class="episode-input-group">
+          <input type="text" placeholder="剧集名称 (如: 第1集)" required>
+          <input type="url" placeholder="视频地址 (http://... 或 https://...)" required>
+          <button type="button" class="remove-episode-btn" onclick="removeEpisodeInput(this)">-</button>
+        </div>
+      `;
+    }
+
+    // 添加剧集输入行
+    function addEpisodeInput() {
+      const container = document.getElementById('episode-inputs-container');
+      const newInputGroup = document.createElement('div');
+      newInputGroup.className = 'episode-input-group';
+      newInputGroup.innerHTML = `
+        <input type="text" placeholder="剧集名称 (如: 第${container.children.length + 1}集)" required>
+        <input type="url" placeholder="视频地址 (http://... 或 https://...)" required>
+        <button type="button" class="remove-episode-btn" onclick="removeEpisodeInput(this)">-</button>
+      `;
+      container.appendChild(newInputGroup);
+    }
+
+    // 删除剧集输入行
+    function removeEpisodeInput(button) {
+      const container = document.getElementById('episode-inputs-container');
+      if (container.children.length > 1) {
+        button.parentElement.remove();
+      }
+    }
+
+    // 删除视频系列
+    function deleteSeries(index, event) {
+      event.stopPropagation();
+      if (confirm('确定要删除这个视频系列吗？')) {
+        seriesData.splice(index, 1);
+        saveSeriesData();
+        renderSeriesList();
+        
+        // 如果删除的是当前播放的系列，需要重新初始化
+        if (index === currentSeriesIndex) {
+          if (seriesData.length > 0) {
+            currentSeriesIndex = Math.min(currentSeriesIndex, seriesData.length - 1);
+            displayEpisodes(currentSeriesIndex);
+            playEpisode(currentSeriesIndex, 0);
+          } else {
+            showEmptyState();
+          }
+        } else if (index < currentSeriesIndex) {
+          currentSeriesIndex--;
+        }
+      }
+    }
+
+    // 删除单个剧集
+    function deleteEpisode(seriesIdx, episodeIdx, event) {
+      event.stopPropagation();
+      if (confirm('确定要删除这一集吗？')) {
+        seriesData[seriesIdx].episodes.splice(episodeIdx, 1);
+        
+        // 如果系列没有剧集了，删除整个系列
+        if (seriesData[seriesIdx].episodes.length === 0) {
+          seriesData.splice(seriesIdx, 1);
+          saveSeriesData();
+          renderSeriesList();
+          
+          if (seriesData.length > 0) {
+            currentSeriesIndex = Math.min(currentSeriesIndex, seriesData.length - 1);
+            displayEpisodes(currentSeriesIndex);
+            playEpisode(currentSeriesIndex, 0);
+          } else {
+            showEmptyState();
+          }
+        } else {
+          saveSeriesData();
+          
+          // 重新显示剧集列表
+          if (seriesIdx === currentSeriesIndex) {
+            currentEpisodeIndex = Math.min(currentEpisodeIndex, seriesData[seriesIdx].episodes.length - 1);
+            displayEpisodes(seriesIdx);
+            playEpisode(seriesIdx, currentEpisodeIndex);
+          }
+        }
+      }
+    }
+
+    // 渲染视频系列列表
+    function renderSeriesList() {
+      const seriesListEl = document.getElementById('series-list');
+      seriesListEl.innerHTML = '';
+      
+      if (seriesData.length === 0) {
+        showEmptyState();
+        return;
+      }
+      
+      hideEmptyState();
+      
+      seriesData.forEach((series, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="series-name">${series.title}</span>
+          <button class="delete-btn" onclick="deleteSeries(${index}, event)">×</button>
+        `;
+        li.addEventListener('click', () => {
+          displayEpisodes(index);
+          playEpisode(index, 0);
+        });
+        seriesListEl.appendChild(li);
+      });
+    }
+
+    // 显示空状态
+    function showEmptyState() {
+      document.getElementById('empty-state').style.display = 'block';
+      document.querySelector('.player-container').style.display = 'none';
+      document.getElementById('episode-list').style.display = 'none';
+      document.getElementById('series-title').textContent = '';
+    }
+
+    // 隐藏空状态
+    function hideEmptyState() {
+      document.getElementById('empty-state').style.display = 'none';
+      document.querySelector('.player-container').style.display = 'block';
+      document.getElementById('episode-list').style.display = 'flex';
+    }
+
+    // 处理表单提交 - 移到页面加载完成后
+    function setupFormHandlers() {
+      const form = document.getElementById('add-video-form');
+      if (form) {
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          console.log('表单提交被触发');
+          
+          const title = document.getElementById('series-title-input').value.trim();
+          console.log('系列标题:', title);
+          
+          if (!title || title.length === 0) {
+            alert('请输入系列标题');
+            return;
+          }
+          
+          const episodeInputs = document.querySelectorAll('#episode-inputs-container .episode-input-group');
+          const episodes = [];
+          console.log('找到剧集输入框数量:', episodeInputs.length);
+          
+          for (let i = 0; i < episodeInputs.length; i++) {
+            const inputs = episodeInputs[i].querySelectorAll('input');
+            const name = inputs[0].value.trim();
+            const url = inputs[1].value.trim();
+            console.log(`剧集${i + 1}:`, name, url);
+            
+            if (!name || !url) {
+              alert(`请完整填写第${i + 1}个剧集的信息`);
+              return;
+            }
+            
+            // 简单的URL验证
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+              alert(`第${i + 1}个剧集的视频地址无效，请输入完整的URL`);
+              return;
+            }
+            
+            episodes.push({ name, url });
+          }
+          
+          if (episodes.length === 0) {
+            alert('请至少添加一个剧集');
+            return;
+          }
+          
+          console.log('准备保存数据:', { title, episodes });
+          
+          // 添加到数据中
+          seriesData.push({ title, episodes });
+          saveSeriesData();
+          console.log('数据保存完成，当前数据:', seriesData);
+          
+          renderSeriesList();
+          closeAddVideoModal();
+          
+          // 如果这是第一个视频系列，自动开始播放
+          if (seriesData.length === 1) {
+            currentSeriesIndex = 0;
+            currentEpisodeIndex = 0;
+            displayEpisodes(0);
+            playEpisode(0, 0);
+          }
+          
+          alert('视频系列添加成功！');
+        });
+      }
+    }
+
+    // 全局Tab切换函数
+    function switchTab(tabName) {
+      console.log('切换到Tab:', tabName);
+      
+      const tabs = document.querySelectorAll('.sidebar-tab');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      // 更新tab状态
+      tabs.forEach(tab => {
+        if (tab.dataset.tab === tabName) {
+          tab.classList.add('active');
+        } else {
+          tab.classList.remove('active');
+        }
+      });
+      
+      // 显示对应内容
+      tabContents.forEach(content => {
+        content.style.display = 'none';
+      });
+      
+      const targetContent = document.getElementById(tabName + '-tab');
+      if (targetContent) {
+        targetContent.style.display = 'block';
+        console.log('成功显示:', tabName + '-tab');
+      }
+      
+      // 如果切换到历史页面，刷新历史记录
+      if (tabName === 'history') {
+        // 确保 displayHistory 函数存在
+        if (typeof window.displayHistory === 'function') {
+          window.displayHistory();
+        } else {
+          console.log('displayHistory 函数尚未初始化，稍后调用');
+          setTimeout(() => {
+            if (typeof window.displayHistory === 'function') {
+              window.displayHistory();
+            }
+          }, 100);
+        }
+      }
+    }
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const passwordOverlay = document.getElementById('password-overlay');
+      const passwordInput = document.getElementById('password-input');
+      const passwordSubmit = document.getElementById('password-submit');
+      const passwordError = document.getElementById('password-error');
+      const mainContainer = document.querySelector('.container');
+      
+      const correctPassword = '666666';
+
+      function authenticate() {
+        if (passwordInput.value === correctPassword) {
+          sessionStorage.setItem('isAuthenticated', 'true');
+          passwordOverlay.style.display = 'none';
+          mainContainer.style.display = 'flex';
+          initializePlayer();
+        } else {
+          passwordError.textContent = '密码错误，请重试！';
+          passwordInput.value = '';
+          passwordInput.focus();
+        }
+      }
+
+      if (sessionStorage.getItem('isAuthenticated') === 'true') {
+        mainContainer.style.display = 'flex';
+        initializePlayer();
+      } else {
+        passwordOverlay.style.display = 'flex';
+        passwordInput.focus();
+      }
+
+      passwordSubmit.addEventListener('click', authenticate);
+      passwordInput.addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') authenticate();
+      });
+    });
+
+    function initializePlayer() {
+      // 先加载数据
+      loadSeriesData();
+      
+      // 设置表单处理器
+      setupFormHandlers();
+      
+      const player = videojs('my-video', { 
+        responsive: true, 
+        fluid: true,
+        html5: {
+          hls: {
+            enableLowInitialPlaylist: true,
+            smoothQualityChange: true
+          }
+        }
+      });
+      
+      const seriesListEl = document.getElementById('series-list');
+      const seriesTitleEl = document.getElementById('series-title');
+      const episodeListEl = document.getElementById('episode-list');
+      const restoreOverlay = document.getElementById('restore-overlay');
+      const historyListEl = document.getElementById('history-list');
+      let pendingSeekTime = null; // 用于存储待跳转的时间
+
+      // iOS检测
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      
+      // 恢复播放覆盖层点击事件
+      restoreOverlay.addEventListener('click', () => {
+        if (pendingSeekTime !== null) {
+          // 先播放，然后在合适的时机跳转
+          player.play().then(() => {
+            // 使用setTimeout确保播放已开始
+            setTimeout(() => {
+              console.log(`iOS恢复播放：跳转到 ${pendingSeekTime}秒`);
+              player.currentTime(pendingSeekTime);
+              pendingSeekTime = null;
+            }, 100);
+          }).catch(e => {
+            console.error('播放失败:', e);
+          });
+        } else {
+          player.play();
+        }
+      });
+
+      // 播放开始时隐藏覆盖层
+      player.on('play', () => {
+        restoreOverlay.style.display = 'none';
+      });
+
+      function saveProgress() {
+        const time = player.currentTime();
+        if (isNaN(time) || time < 1) return;
+        const progress = {
+          seriesIndex: currentSeriesIndex,
+          episodeIndex: currentEpisodeIndex,
+          time: time,
+        };
+        localStorage.setItem('playbackProgress', JSON.stringify(progress));
+        
+        // 同时保存到播放历史
+        saveToHistory(currentSeriesIndex, currentEpisodeIndex, time);
+      }
+      
+      function saveToHistory(seriesIdx, episodeIdx, time) {
+        if (!seriesData[seriesIdx] || !seriesData[seriesIdx].episodes[episodeIdx]) return;
+        
+        const series = seriesData[seriesIdx];
+        const episode = series.episodes[episodeIdx];
+        const duration = player.duration() || 0;
+        
+        const historyItem = {
+          seriesIndex: seriesIdx,
+          episodeIndex: episodeIdx,
+          seriesTitle: series.title,
+          episodeName: episode.name,
+          currentTime: time,
+          duration: duration,
+          timestamp: Date.now(),
+          watchDate: new Date().toLocaleDateString('zh-CN')
+        };
+        
+        let history = [];
+        try {
+          const savedHistory = localStorage.getItem('playHistory');
+          if (savedHistory) {
+            history = JSON.parse(savedHistory);
+          }
+        } catch (e) {
+          console.error('解析播放历史失败:', e);
+        }
+        
+        // 查找是否已存在相同剧集的记录
+        const existingIndex = history.findIndex(item => 
+          item.seriesIndex === seriesIdx && item.episodeIndex === episodeIdx
+        );
+        
+        if (existingIndex >= 0) {
+          // 更新现有记录
+          history[existingIndex] = historyItem;
+        } else {
+          // 添加新记录
+          history.unshift(historyItem);
+        }
+        
+        // 限制历史记录数量，最多保存50条
+        if (history.length > 50) {
+          history = history.slice(0, 50);
+        }
+        
+        localStorage.setItem('playHistory', JSON.stringify(history));
+      }
+      
+      function displayHistory() {
+        let history = [];
+        try {
+          const savedHistory = localStorage.getItem('playHistory');
+          if (savedHistory) {
+            history = JSON.parse(savedHistory);
+          }
+        } catch (e) {
+          console.error('加载播放历史失败:', e);
+        }
+        
+        historyListEl.innerHTML = '';
+        
+        if (history.length === 0) {
+          historyListEl.innerHTML = '<div class="no-history">暂无播放历史</div>';
+          return;
+        }
+        
+        // 过滤掉已删除的视频记录
+        history = history.filter(item => {
+          return seriesData[item.seriesIndex] && 
+                 seriesData[item.seriesIndex].episodes[item.episodeIndex];
+        });
+        
+        // 更新过滤后的历史记录
+        localStorage.setItem('playHistory', JSON.stringify(history));
+        
+        if (history.length === 0) {
+          historyListEl.innerHTML = '<div class="no-history">暂无播放历史</div>';
+          return;
+        }
+        
+        history.forEach((item, index) => {
+          const historyItem = document.createElement('div');
+          historyItem.className = 'history-item';
+          
+          const progressPercent = item.duration > 0 ? (item.currentTime / item.duration * 100).toFixed(1) : 0;
+          const currentTimeStr = formatTime(item.currentTime);
+          const durationStr = item.duration > 0 ? formatTime(item.duration) : '--:--';
+          
+          historyItem.innerHTML = `
+            <div class="history-title">${item.seriesTitle}</div>
+            <div class="history-episode">${item.episodeName}</div>
+            <div class="history-progress">
+              <span>播放至 ${currentTimeStr} / ${durationStr} (${progressPercent}%)</span>
+              <span class="history-time">${item.watchDate}</span>
+            </div>
+          `;
+          
+          historyItem.addEventListener('click', () => {
+            // 切换回视频列表tab
+            switchTab('series');
+            
+            // 播放历史记录中的剧集
+            setTimeout(() => {
+              playEpisode(item.seriesIndex, item.episodeIndex, item.currentTime);
+              displayEpisodes(item.seriesIndex);
+            }, 100);
+          });
+          
+          historyListEl.appendChild(historyItem);
+        });
+      }
+      
+      // 将 displayHistory 函数挂载到全局，供 switchTab 调用
+      window.displayHistory = displayHistory;
+      
+      // 清除历史记录
+      document.getElementById('clear-history').addEventListener('click', () => {
+        if (confirm('确定要清除所有播放历史吗？')) {
+          localStorage.removeItem('playHistory');
+          displayHistory();
+        }
+      });
+      
+      function formatTime(totalSeconds) {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = Math.floor(totalSeconds % 60);
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      }
+
+      function playEpisode(seriesIdx, episodeIdx, startTime = null) {
+        if (!seriesData[seriesIdx] || !seriesData[seriesIdx].episodes[episodeIdx]) {
+          console.error('视频不存在');
+          return;
+        }
+        
+        restoreOverlay.style.display = 'none';
+        currentSeriesIndex = seriesIdx;
+        currentEpisodeIndex = episodeIdx;
+        pendingSeekTime = startTime;
+        
+        const episode = seriesData[seriesIdx].episodes[episodeIdx];
+        player.src({ 
+          src: episode.url, 
+          type: episode.url.includes('.m3u8') ? 'application/x-mpegURL' : 'video/mp4' 
+        });
+        
+        if (startTime !== null) {
+          // 如果有指定开始时间，等待元数据加载后处理
+          player.one('loadedmetadata', () => {
+            if (isIOS) {
+              // iOS需要用户交互才能跳转，显示恢复提示
+              const timeStr = formatTime(startTime);
+              restoreOverlay.innerHTML = `上次播放至 ${timeStr}<br>点击屏幕继续播放`;
+              restoreOverlay.style.display = 'flex';
+            } else {
+              // 非iOS设备直接跳转
+              player.currentTime(startTime);
+              player.play();
+            }
+          });
+        } else {
+          player.play();
+        }
+        
+        updateActiveStates();
+      }
+
+      function displayEpisodes(seriesIdx) {
+        if (!seriesData[seriesIdx]) return;
+        
+        currentSeriesIndex = seriesIdx;
+        const series = seriesData[seriesIdx];
+        seriesTitleEl.textContent = series.title;
+        episodeListEl.innerHTML = '';
+        
+        // 添加剧集按钮
+        series.episodes.forEach((episode, index) => {
+          const btn = document.createElement('button');
+          btn.className = 'episode-btn';
+          btn.innerHTML = `
+            ${episode.name}
+            <button class="episode-delete" onclick="deleteEpisode(${seriesIdx}, ${index}, event)">×</button>
+          `;
+          btn.addEventListener('click', (e) => {
+            if (e.target.className !== 'episode-delete') {
+              playEpisode(seriesIdx, index);
+            }
+          });
+          episodeListEl.appendChild(btn);
+        });
+        
+        // 添加"添加剧集"按钮
+        const addBtn = document.createElement('button');
+        addBtn.className = 'add-episode-btn';
+        addBtn.textContent = '+ 添加剧集';
+        addBtn.addEventListener('click', () => {
+          const name = prompt('请输入剧集名称:');
+          if (!name || name.trim() === '') return;
+          
+          const url = prompt('请输入视频地址:');
+          if (!url || url.trim() === '') return;
+          
+          // 简单的URL验证
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            alert('请输入有效的视频地址（必须以http://或https://开头）');
+            return;
+          }
+          
+          // 添加到当前系列
+          seriesData[seriesIdx].episodes.push({ 
+            name: name.trim(), 
+            url: url.trim() 
+          });
+          saveSeriesData();
+          displayEpisodes(seriesIdx);
+        });
+        episodeListEl.appendChild(addBtn);
+        
+        updateActiveStates();
+      }
+
+      // 将一些函数设为全局，供HTML中的onclick使用
+      window.deleteEpisode = function(seriesIdx, episodeIdx, event) {
+        event.stopPropagation();
+        if (confirm('确定要删除这一集吗？')) {
+          seriesData[seriesIdx].episodes.splice(episodeIdx, 1);
+          
+          // 如果系列没有剧集了，删除整个系列
+          if (seriesData[seriesIdx].episodes.length === 0) {
+            seriesData.splice(seriesIdx, 1);
+            saveSeriesData();
+            renderSeriesList();
+            
+            if (seriesData.length > 0) {
+              currentSeriesIndex = Math.min(currentSeriesIndex, seriesData.length - 1);
+              displayEpisodes(currentSeriesIndex);
+              playEpisode(currentSeriesIndex, 0);
+            } else {
+              showEmptyState();
+            }
+          } else {
+            saveSeriesData();
+            
+            // 重新显示剧集列表
+            if (seriesIdx === currentSeriesIndex) {
+              currentEpisodeIndex = Math.min(currentEpisodeIndex, seriesData[seriesIdx].episodes.length - 1);
+              displayEpisodes(seriesIdx);
+              playEpisode(seriesIdx, currentEpisodeIndex);
+            }
+          }
+        }
+      };
+
+      function updateActiveStates() {
+        Array.from(seriesListEl.children).forEach((li, index) => {
+          li.classList.toggle('active', index === currentSeriesIndex);
+        });
+        Array.from(episodeListEl.children).forEach((btn, index) => {
+          if (btn.className === 'episode-btn') {
+            btn.classList.toggle('active', index === currentEpisodeIndex);
+          }
+        });
+      }
+
+      function init() {
+        renderSeriesList();
+        
+        if (seriesData.length === 0) {
+          showEmptyState();
+          return;
+        }
+
+        // 检查保存的进度
+        const savedProgressRaw = localStorage.getItem('playbackProgress');
+        let shouldRestore = false;
+        let savedProgress;
+
+        if (savedProgressRaw) {
+          try {
+            savedProgress = JSON.parse(savedProgressRaw);
+            if (savedProgress.seriesIndex < seriesData.length && 
+                savedProgress.episodeIndex < seriesData[savedProgress.seriesIndex].episodes.length) {
+              shouldRestore = true;
+            }
+          } catch (e) {
+            localStorage.removeItem('playbackProgress');
+          }
+        }
+        
+        if (shouldRestore) {
+          // 恢复之前的播放进度
+          currentSeriesIndex = savedProgress.seriesIndex;
+          currentEpisodeIndex = savedProgress.episodeIndex;
+          displayEpisodes(currentSeriesIndex);
+          playEpisode(currentSeriesIndex, currentEpisodeIndex, savedProgress.time);
+        } else {
+          // 从第一集开始
+          displayEpisodes(0);
+          playEpisode(0, 0);
+        }
+      }
+
+      init();
+
+      // 定期保存进度
+      setInterval(saveProgress, 5000);
+      player.on('pause', saveProgress);
+      player.on('timeupdate', () => {
+        // 在iOS上，timeupdate事件更可靠
+        if (isIOS && Math.floor(player.currentTime()) % 10 === 0) {
+          saveProgress();
+        }
+      });
+      
+      // 页面状态变化时保存进度
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) saveProgress();
+      });
+      window.addEventListener('pagehide', saveProgress);
+
+      // 视频播放结束，自动播放下一集
+      player.on('ended', function() {
+        const nextEpisodeIndex = currentEpisodeIndex + 1;
+        const totalEpisodes = seriesData[currentSeriesIndex].episodes.length;
+        if (nextEpisodeIndex < totalEpisodes) {
+          playEpisode(currentSeriesIndex, nextEpisodeIndex);
+        } else {
+          localStorage.removeItem('playbackProgress'); 
+        }
+      });
+    }
+  </script>
+</body>
+</html>
