@@ -209,6 +209,13 @@
       font-size: 24px;
       font-weight: bold;
     }
+    .episode-title {
+      text-align: center;
+      margin: 10px 0;
+      font-size: 18px;
+      color: #666;
+      font-weight: normal;
+    }
     .episode-list {
       display: flex;
       flex-wrap: wrap;
@@ -325,7 +332,23 @@
       z-index: 9998;
       display: none;
     }
-    .add-video-modal {
+    
+    /* 添加剧集弹窗样式 */
+    #add-episode-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9998;
+      display: none;
+    }
+    
+    .add-video-modal, .add-episode-modal {
       background: white;
       padding: 30px;
       border-radius: 8px;
@@ -333,7 +356,7 @@
       width: 90%;
       max-width: 500px;
     }
-    .add-video-modal h3 {
+    .add-video-modal h3, .add-episode-modal h3 {
       margin-top: 0;
       margin-bottom: 20px;
       color: #333;
@@ -473,6 +496,29 @@
     </div>
   </div>
 
+  <!-- 添加剧集弹窗 -->
+  <div id="add-episode-overlay">
+    <div class="add-episode-modal">
+      <h3>添加剧集</h3>
+      <form id="add-episode-form">
+        <div class="form-group">
+          <label for="episode-name-input">剧集名称:</label>
+          <input type="text" id="episode-name-input" placeholder="请输入剧集名称（如：第1集）" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="episode-url-input">视频地址:</label>
+          <input type="url" id="episode-url-input" placeholder="请输入视频地址（http://... 或 https://...）" required>
+        </div>
+        
+        <div class="modal-buttons">
+          <button type="button" class="btn-cancel" onclick="closeAddEpisodeModal()">取消</button>
+          <button type="submit" class="btn-save">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="container">
     <div class="sidebar">
       <div class="sidebar-tabs">
@@ -494,6 +540,7 @@
     </div>
     <div class="main-content">
       <h1 id="series-title" class="series-title"></h1>
+      <h2 id="episode-title" class="episode-title"></h2>
       <div class="player-container">
         <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto" playsinline webkit-playsinline></video>
         <div id="restore-overlay"></div>
@@ -554,6 +601,18 @@
           <button type="button" class="remove-episode-btn" onclick="removeEpisodeInput(this)">-</button>
         </div>
       `;
+    }
+
+    // 打开添加剧集弹窗
+    function openAddEpisodeModal() {
+      document.getElementById('add-episode-overlay').style.display = 'flex';
+      document.getElementById('episode-name-input').focus();
+    }
+
+    // 关闭添加剧集弹窗
+    function closeAddEpisodeModal() {
+      document.getElementById('add-episode-overlay').style.display = 'none';
+      document.getElementById('add-episode-form').reset();
     }
 
     // 添加剧集输入行
@@ -656,6 +715,9 @@
         });
         seriesListEl.appendChild(li);
       });
+      
+      // 更新活跃状态
+      updateActiveStates();
     }
 
     // 显示空状态
@@ -664,6 +726,7 @@
       document.querySelector('.player-container').style.display = 'none';
       document.getElementById('episode-list').style.display = 'none';
       document.getElementById('series-title').textContent = '';
+      document.getElementById('episode-title').textContent = '';
     }
 
     // 隐藏空状态
@@ -675,6 +738,7 @@
 
     // 处理表单提交 - 移到页面加载完成后
     function setupFormHandlers() {
+      // 添加视频系列表单
       const form = document.getElementById('add-video-form');
       if (form) {
         form.addEventListener('submit', function(e) {
@@ -721,22 +785,61 @@
           console.log('准备保存数据:', { title, episodes });
           
           // 添加到数据中
+          const newSeriesIndex = seriesData.length;
           seriesData.push({ title, episodes });
           saveSeriesData();
           console.log('数据保存完成，当前数据:', seriesData);
           
+          // 重新渲染列表
           renderSeriesList();
           closeAddVideoModal();
           
-          // 如果这是第一个视频系列，自动开始播放
-          if (seriesData.length === 1) {
-            currentSeriesIndex = 0;
-            currentEpisodeIndex = 0;
-            displayEpisodes(0);
-            playEpisode(0, 0);
+          // 自动切换到新添加的系列并开始播放
+          currentSeriesIndex = newSeriesIndex;
+          currentEpisodeIndex = 0;
+          displayEpisodes(newSeriesIndex);
+          
+          // 如果有播放器实例，开始播放
+          if (window.player) {
+            playEpisode(newSeriesIndex, 0);
           }
           
           alert('视频系列添加成功！');
+        });
+      }
+
+      // 添加剧集表单
+      const episodeForm = document.getElementById('add-episode-form');
+      if (episodeForm) {
+        episodeForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          
+          const name = document.getElementById('episode-name-input').value.trim();
+          const url = document.getElementById('episode-url-input').value.trim();
+          
+          if (!name) {
+            alert('请输入剧集名称');
+            return;
+          }
+          
+          if (!url) {
+            alert('请输入视频地址');
+            return;
+          }
+          
+          // 简单的URL验证
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            alert('请输入有效的视频地址（必须以http://或https://开头）');
+            return;
+          }
+          
+          // 添加到当前系列
+          seriesData[currentSeriesIndex].episodes.push({ name, url });
+          saveSeriesData();
+          displayEpisodes(currentSeriesIndex);
+          closeAddEpisodeModal();
+          
+          alert('剧集添加成功！');
         });
       }
     }
@@ -839,8 +942,12 @@
         }
       });
       
+      // 将player设为全局变量，供其他函数使用
+      window.player = player;
+      
       const seriesListEl = document.getElementById('series-list');
       const seriesTitleEl = document.getElementById('series-title');
+      const episodeTitleEl = document.getElementById('episode-title');
       const episodeListEl = document.getElementById('episode-list');
       const restoreOverlay = document.getElementById('restore-overlay');
       const historyListEl = document.getElementById('history-list');
@@ -1029,6 +1136,10 @@
         pendingSeekTime = startTime;
         
         const episode = seriesData[seriesIdx].episodes[episodeIdx];
+        
+        // 更新剧集标题
+        episodeTitleEl.textContent = episode.name;
+        
         player.src({ 
           src: episode.url, 
           type: episode.url.includes('.m3u8') ? 'application/x-mpegURL' : 'video/mp4' 
@@ -1054,6 +1165,9 @@
         
         updateActiveStates();
       }
+
+      // 将playEpisode设为全局函数
+      window.playEpisode = playEpisode;
 
       function displayEpisodes(seriesIdx) {
         if (!seriesData[seriesIdx]) return;
@@ -1084,30 +1198,15 @@
         addBtn.className = 'add-episode-btn';
         addBtn.textContent = '+ 添加剧集';
         addBtn.addEventListener('click', () => {
-          const name = prompt('请输入剧集名称:');
-          if (!name || name.trim() === '') return;
-          
-          const url = prompt('请输入视频地址:');
-          if (!url || url.trim() === '') return;
-          
-          // 简单的URL验证
-          if (!url.startsWith('http://') && !url.startsWith('https://')) {
-            alert('请输入有效的视频地址（必须以http://或https://开头）');
-            return;
-          }
-          
-          // 添加到当前系列
-          seriesData[seriesIdx].episodes.push({ 
-            name: name.trim(), 
-            url: url.trim() 
-          });
-          saveSeriesData();
-          displayEpisodes(seriesIdx);
+          openAddEpisodeModal();
         });
         episodeListEl.appendChild(addBtn);
         
         updateActiveStates();
       }
+
+      // 将displayEpisodes设为全局函数
+      window.displayEpisodes = displayEpisodes;
 
       // 将一些函数设为全局，供HTML中的onclick使用
       window.deleteEpisode = function(seriesIdx, episodeIdx, event) {
@@ -1142,15 +1241,23 @@
       };
 
       function updateActiveStates() {
+        // 更新系列列表的活跃状态
         Array.from(seriesListEl.children).forEach((li, index) => {
-          li.classList.toggle('active', index === currentSeriesIndex);
+          if (li.tagName === 'LI') {
+            li.classList.toggle('active', index === currentSeriesIndex);
+          }
         });
+        
+        // 更新剧集列表的活跃状态
         Array.from(episodeListEl.children).forEach((btn, index) => {
-          if (btn.className === 'episode-btn') {
+          if (btn.className.includes('episode-btn')) {
             btn.classList.toggle('active', index === currentEpisodeIndex);
           }
         });
       }
+
+      // 将updateActiveStates设为全局函数
+      window.updateActiveStates = updateActiveStates;
 
       function init() {
         renderSeriesList();
