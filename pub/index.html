@@ -444,6 +444,20 @@
     .empty-state p {
       margin-bottom: 20px;
     }
+
+    /* 添加data.js标识样式 */
+    .datajs-indicator {
+      position: relative;
+    }
+    .datajs-indicator::after {
+      content: "📂";
+      position: absolute;
+      right: -25px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      opacity: 0.6;
+    }
   </style>
 </head>
 <body>
@@ -553,39 +567,35 @@
     let currentSeriesIndex = 0;
     let currentEpisodeIndex = 0;
 
-    // 加载本地数据
+    // 修改后的加载数据函数 - 每次都重新合并data.js内容
     function loadSeriesData() {
       try {
-        // 首先尝试从localStorage获取用户添加的数据
-        const savedData = localStorage.getItem('videoSeriesData');
-        let localData = [];
+        console.log('开始加载视频数据...');
         
-        if (savedData) {
-          localData = JSON.parse(savedData);
+        // 获取用户添加的数据（不包含data.js数据）
+        const savedUserData = localStorage.getItem('userVideoSeriesData');
+        let userData = [];
+        
+        if (savedUserData) {
+          userData = JSON.parse(savedUserData);
+          console.log('加载的用户自定义数据:', userData);
         }
         
-        // 检查是否已经加载过data.js中的数据
-        const hasLoadedDefaultData = localStorage.getItem('hasLoadedDefaultData');
-        
-        if (!hasLoadedDefaultData && typeof playerData !== 'undefined') {
-          // 如果data.js中有数据且还没有加载过，则合并数据
-          console.log('首次加载，合并data.js中的数据');
-          seriesData = [...playerData, ...localData];
-          
-          // 标记已经加载过默认数据
-          localStorage.setItem('hasLoadedDefaultData', 'true');
-          
-          // 保存合并后的数据
-          saveSeriesData();
-        } else {
-          // 如果已经加载过默认数据，则只使用localStorage中的数据
-          seriesData = localData;
+        // 获取data.js中的数据
+        let dataJsContent = [];
+        if (typeof playerData !== 'undefined' && Array.isArray(playerData)) {
+          dataJsContent = [...playerData];
+          console.log('加载的data.js数据:', dataJsContent);
         }
         
-        console.log('加载的视频数据:', seriesData);
+        // 合并数据：data.js在前，用户数据在后
+        seriesData = [...dataJsContent, ...userData];
+        
+        console.log('最终合并的数据:', seriesData);
+        
       } catch (e) {
         console.error('加载视频数据失败:', e);
-        // 如果localStorage出错，至少加载data.js中的数据
+        // 如果出错，至少保证data.js数据可用
         if (typeof playerData !== 'undefined') {
           seriesData = [...playerData];
         } else {
@@ -594,10 +604,21 @@
       }
     }
 
-    // 保存数据到本地
+    // 修改保存函数 - 只保存用户添加的数据
     function saveSeriesData() {
       try {
-        localStorage.setItem('videoSeriesData', JSON.stringify(seriesData));
+        // 分离data.js数据和用户数据
+        let dataJsCount = 0;
+        if (typeof playerData !== 'undefined' && Array.isArray(playerData)) {
+          dataJsCount = playerData.length;
+        }
+        
+        // 只保存用户添加的数据（data.js数据之后的部分）
+        const userData = seriesData.slice(dataJsCount);
+        localStorage.setItem('userVideoSeriesData', JSON.stringify(userData));
+        
+        console.log('保存用户数据:', userData);
+        
       } catch (e) {
         console.error('保存视频数据失败:', e);
       }
@@ -657,9 +678,21 @@
       }
     }
 
-    // 删除视频系列
+    // 修改删除系列函数 - 检查是否为data.js内容
     function deleteSeries(index, event) {
       event.stopPropagation();
+      
+      // 检查是否为data.js中的内容
+      let dataJsCount = 0;
+      if (typeof playerData !== 'undefined' && Array.isArray(playerData)) {
+        dataJsCount = playerData.length;
+      }
+      
+      if (index < dataJsCount) {
+        alert('无法删除来自data.js的视频系列');
+        return;
+      }
+      
       if (confirm('确定要删除这个视频系列吗？')) {
         seriesData.splice(index, 1);
         saveSeriesData();
@@ -680,9 +713,21 @@
       }
     }
 
-    // 删除单个剧集
+    // 修改删除剧集函数 - 检查是否为data.js内容
     function deleteEpisode(seriesIdx, episodeIdx, event) {
       event.stopPropagation();
+      
+      // 检查是否为data.js中的内容
+      let dataJsCount = 0;
+      if (typeof playerData !== 'undefined' && Array.isArray(playerData)) {
+        dataJsCount = playerData.length;
+      }
+      
+      if (seriesIdx < dataJsCount) {
+        alert('无法删除来自data.js的剧集');
+        return;
+      }
+      
       if (confirm('确定要删除这一集吗？')) {
         seriesData[seriesIdx].episodes.splice(episodeIdx, 1);
         
@@ -712,7 +757,7 @@
       }
     }
 
-    // 渲染视频系列列表
+    // 修改渲染函数 - 标识data.js内容
     function renderSeriesList() {
       const seriesListEl = document.getElementById('series-list');
       seriesListEl.innerHTML = '';
@@ -724,11 +769,18 @@
       
       hideEmptyState();
       
+      let dataJsCount = 0;
+      if (typeof playerData !== 'undefined' && Array.isArray(playerData)) {
+        dataJsCount = playerData.length;
+      }
+      
       seriesData.forEach((series, index) => {
         const li = document.createElement('li');
+        const isFromDataJs = index < dataJsCount;
+        
         li.innerHTML = `
-          <span class="series-name">${series.title}</span>
-          <button class="delete-btn" onclick="deleteSeries(${index}, event)">×</button>
+          <span class="series-name ${isFromDataJs ? 'datajs-indicator' : ''}">${series.title}</span>
+          ${!isFromDataJs ? `<button class="delete-btn" onclick="deleteSeries(${index}, event)">×</button>` : ''}
         `;
         li.addEventListener('click', () => {
           displayEpisodes(index);
@@ -850,6 +902,17 @@
           // 简单的URL验证
           if (!url.startsWith('http://') && !url.startsWith('https://')) {
             alert('请输入有效的视频地址（必须以http://或https://开头）');
+            return;
+          }
+          
+          // 检查是否为data.js中的系列
+          let dataJsCount = 0;
+          if (typeof playerData !== 'undefined' && Array.isArray(playerData)) {
+            dataJsCount = playerData.length;
+          }
+          
+          if (currentSeriesIndex < dataJsCount) {
+            alert('无法向data.js中的系列添加剧集');
             return;
           }
           
@@ -1196,13 +1259,20 @@
         const series = seriesData[seriesIdx];
         episodeListEl.innerHTML = '';
         
+        // 检查是否为data.js中的系列
+        let dataJsCount = 0;
+        if (typeof playerData !== 'undefined' && Array.isArray(playerData)) {
+          dataJsCount = playerData.length;
+        }
+        const isFromDataJs = seriesIdx < dataJsCount;
+        
         // 添加剧集按钮
         series.episodes.forEach((episode, index) => {
           const btn = document.createElement('button');
           btn.className = 'episode-btn';
           btn.innerHTML = `
             ${episode.name}
-            <button class="episode-delete" onclick="deleteEpisode(${seriesIdx}, ${index}, event)">×</button>
+            ${!isFromDataJs ? `<button class="episode-delete" onclick="deleteEpisode(${seriesIdx}, ${index}, event)">×</button>` : ''}
           `;
           btn.addEventListener('click', (e) => {
             if (e.target.className !== 'episode-delete') {
@@ -1212,14 +1282,16 @@
           episodeListEl.appendChild(btn);
         });
         
-        // 添加"添加剧集"按钮
-        const addBtn = document.createElement('button');
-        addBtn.className = 'add-episode-btn';
-        addBtn.textContent = '+ 添加剧集';
-        addBtn.addEventListener('click', () => {
-          openAddEpisodeModal();
-        });
-        episodeListEl.appendChild(addBtn);
+        // 只对用户添加的系列显示"添加剧集"按钮
+        if (!isFromDataJs) {
+          const addBtn = document.createElement('button');
+          addBtn.className = 'add-episode-btn';
+          addBtn.textContent = '+ 添加剧集';
+          addBtn.addEventListener('click', () => {
+            openAddEpisodeModal();
+          });
+          episodeListEl.appendChild(addBtn);
+        }
         
         updateActiveStates();
       }
@@ -1230,6 +1302,18 @@
       // 将一些函数设为全局，供HTML中的onclick使用
       window.deleteEpisode = function(seriesIdx, episodeIdx, event) {
         event.stopPropagation();
+        
+        // 检查是否为data.js中的内容
+        let dataJsCount = 0;
+        if (typeof playerData !== 'undefined' && Array.isArray(playerData)) {
+          dataJsCount = playerData.length;
+        }
+        
+        if (seriesIdx < dataJsCount) {
+          alert('无法删除来自data.js的剧集');
+          return;
+        }
+        
         if (confirm('确定要删除这一集吗？')) {
           seriesData[seriesIdx].episodes.splice(episodeIdx, 1);
           
