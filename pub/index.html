@@ -450,7 +450,7 @@
       position: relative;
     }
     .datajs-indicator::after {
-      content: "📂";
+      content: "";
       position: absolute;
       right: -25px;
       top: 50%;
@@ -534,12 +534,10 @@
       </div>
       <div class="sidebar-content">
         <div id="series-tab" class="tab-content" style="display: block;">
-          <h2>选择视频</h2>
           <ul id="series-list"></ul>
           <button class="add-video-btn" onclick="openAddVideoModal()">+ 添加视频</button>
         </div>
         <div id="history-tab" class="tab-content" style="display: none;">
-          <h2>播放历史</h2>
           <div id="history-list"></div>
           <button id="clear-history" class="history-clear">清除历史记录</button>
         </div>
