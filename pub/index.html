@@ -545,6 +545,7 @@
     </div>
   </div>
 
+  <script src="data.js"></script>
   <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
   <script>
     // 全局变量
@@ -555,13 +556,41 @@
     // 加载本地数据
     function loadSeriesData() {
       try {
+        // 首先尝试从localStorage获取用户添加的数据
         const savedData = localStorage.getItem('videoSeriesData');
+        let localData = [];
+        
         if (savedData) {
-          seriesData = JSON.parse(savedData);
+          localData = JSON.parse(savedData);
         }
+        
+        // 检查是否已经加载过data.js中的数据
+        const hasLoadedDefaultData = localStorage.getItem('hasLoadedDefaultData');
+        
+        if (!hasLoadedDefaultData && typeof playerData !== 'undefined') {
+          // 如果data.js中有数据且还没有加载过，则合并数据
+          console.log('首次加载，合并data.js中的数据');
+          seriesData = [...playerData, ...localData];
+          
+          // 标记已经加载过默认数据
+          localStorage.setItem('hasLoadedDefaultData', 'true');
+          
+          // 保存合并后的数据
+          saveSeriesData();
+        } else {
+          // 如果已经加载过默认数据，则只使用localStorage中的数据
+          seriesData = localData;
+        }
+        
+        console.log('加载的视频数据:', seriesData);
       } catch (e) {
         console.error('加载视频数据失败:', e);
-        seriesData = [];
+        // 如果localStorage出错，至少加载data.js中的数据
+        if (typeof playerData !== 'undefined') {
+          seriesData = [...playerData];
+        } else {
+          seriesData = [];
+        }
       }
     }
 
@@ -717,8 +746,7 @@
       document.getElementById('empty-state').style.display = 'block';
       document.querySelector('.player-container').style.display = 'none';
       document.getElementById('episode-list').style.display = 'none';
-      document.getElementById('series-title').textContent = '';
-      document.getElementById('episode-title').textContent = '';
+      document.getElementById('combined-title').textContent = '';
     }
 
     // 隐藏空状态
