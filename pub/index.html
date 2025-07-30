@@ -203,18 +203,11 @@
       height: 0;
       padding-top: 56.25%;
     }
-    .series-title {
+    .combined-title {
       text-align: center;
       margin: 20px 0;
       font-size: 24px;
       font-weight: bold;
-    }
-    .episode-title {
-      text-align: center;
-      margin: 10px 0;
-      font-size: 18px;
-      color: #666;
-      font-weight: normal;
     }
     .episode-list {
       display: flex;
@@ -539,8 +532,7 @@
       </div>
     </div>
     <div class="main-content">
-      <h1 id="series-title" class="series-title"></h1>
-      <h2 id="episode-title" class="episode-title"></h2>
+      <h1 id="combined-title" class="combined-title"></h1>
       <div class="player-container">
         <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto" playsinline webkit-playsinline></video>
         <div id="restore-overlay"></div>
@@ -946,8 +938,7 @@
       window.player = player;
       
       const seriesListEl = document.getElementById('series-list');
-      const seriesTitleEl = document.getElementById('series-title');
-      const episodeTitleEl = document.getElementById('episode-title');
+      const combinedTitleEl = document.getElementById('combined-title');
       const episodeListEl = document.getElementById('episode-list');
       const restoreOverlay = document.getElementById('restore-overlay');
       const historyListEl = document.getElementById('history-list');
@@ -1137,8 +1128,9 @@
         
         const episode = seriesData[seriesIdx].episodes[episodeIdx];
         
-        // 更新剧集标题
-        episodeTitleEl.textContent = episode.name;
+        // 更新合并标题：{视频系列}-{剧集}
+        const seriesTitle = seriesData[seriesIdx].title;
+        combinedTitleEl.textContent = `${seriesTitle} - ${episode.name}`;
         
         player.src({ 
           src: episode.url, 
@@ -1174,7 +1166,6 @@
         
         currentSeriesIndex = seriesIdx;
         const series = seriesData[seriesIdx];
-        seriesTitleEl.textContent = series.title;
         episodeListEl.innerHTML = '';
         
         // 添加剧集按钮
