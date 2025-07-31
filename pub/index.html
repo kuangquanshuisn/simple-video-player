@@ -1116,7 +1116,7 @@
         saveToHistory(currentSeriesIndex, currentEpisodeIndex, time);
       }
       
-      function saveToHistory(seriesIdx, episodeIdx, time) {
+            function saveToHistory(seriesIdx, episodeIdx, time) {
         if (!seriesData[seriesIdx] || !seriesData[seriesIdx].episodes[episodeIdx]) return;
         
         const series = seriesData[seriesIdx];
@@ -1143,20 +1143,19 @@
         } catch (e) {
           console.error('解析播放历史失败:', e);
         }
-        
+
         // 查找是否已存在相同剧集的记录
         const existingIndex = history.findIndex(item => 
           item.seriesIndex === seriesIdx && item.episodeIndex === episodeIdx
         );
         
+        // 如果找到了，先从原来的位置删除它
         if (existingIndex >= 0) {
-          // 更新现有记录
-          history[existingIndex] = historyItem;
-        } else {
-          // 添加新记录
-          history.unshift(historyItem);
+          history.splice(existingIndex, 1);
         }
         
+        // 总是将最新的记录添加到数组的最前面 (置顶)
+        history.unshift(historyItem);        
         // 限制历史记录数量，最多保存50条
         if (history.length > 50) {
           history = history.slice(0, 50);
@@ -1227,6 +1226,43 @@
           
           historyListEl.appendChild(historyItem);
         });
+      }
+
+      /**
+       * 查找特定剧集的播放历史记录
+       * @param {number} seriesIdx - 系列的索引
+       * @param {number} episodeIdx - 剧集的索引
+       * @returns {number|null} - 返回播放时间（秒），如果没找到或已播放完则返回null
+       */
+      function findHistoryForEpisode(seriesIdx, episodeIdx) {
+        let history = [];
+        try {
+          const savedHistory = localStorage.getItem('playHistory');
+          if (savedHistory) {
+            history = JSON.parse(savedHistory);
+          }
+        } catch (e) {
+          console.error('加载播放历史(用于查找特定剧集)失败:', e);
+          return null;
+        }
+        
+        // 查找完全匹配的剧集历史
+        const historyEntry = history.find(item => 
+          item.seriesIndex === seriesIdx && item.episodeIndex === episodeIdx
+        );
+        
+        if (historyEntry) {
+          // 如果播放进度超过95%，则认为已经看完，从头开始播放更好
+          if (historyEntry.duration > 0 && (historyEntry.currentTime / historyEntry.duration) > 0.95) {
+            console.log(`剧集(${seriesIdx}, ${episodeIdx})已播放超过95%，将从头开始。`);
+            return null; 
+          }
+          console.log(`找到剧集(${seriesIdx}, ${episodeIdx})的历史记录，时间点: ${historyEntry.currentTime}`);
+          return historyEntry.currentTime;
+        }
+        
+        // 没有找到该剧集的历史记录
+        return null;
       }
       
       // 将 displayHistory 函数挂载到全局，供 switchTab 调用
@@ -1316,11 +1352,14 @@
           `;
           btn.addEventListener('click', (e) => {
             if (e.target.className !== 'episode-delete') {
-              playEpisode(seriesIdx, index);
+              // 先查找这一集的播放历史时间
+              const historyTime = findHistoryForEpisode(seriesIdx, index);
+              // 将找到的时间(或null)传递给播放函数
+              playEpisode(seriesIdx, index, historyTime);
             }
           });
           episodeListEl.appendChild(btn);
-        });
+      });
         
         // 只对用户添加的系列显示"添加剧集"按钮
         if (!isFromDataJs) {
