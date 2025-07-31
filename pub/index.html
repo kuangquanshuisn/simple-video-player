@@ -785,14 +785,52 @@
           ${!isFromDataJs ? `<button class="delete-btn" onclick="deleteSeries(${index}, event)">×</button>` : ''}
         `;
         li.addEventListener('click', () => {
-          displayEpisodes(index);
-          playEpisode(index, 0);
+          displayEpisodes(index); // 立即渲染剧集列表
+
+          const lastPlayed = findLastPlayedEpisodeForSeries(index);
+
+          if (lastPlayed) {
+            // 如果找到了播放记录，则从记录处继续播放
+            playEpisode(index, lastPlayed.episodeIndex, lastPlayed.time);
+          } else {
+            // 如果没有找到记录，则从第一集开始播放
+            playEpisode(index, 0);
+          }
         });
         seriesListEl.appendChild(li);
       });
       
       // 更新活跃状态
       updateActiveStates();
+    }
+    
+    // (可以放在 renderSeriesList 函数的上方或下方)
+    function findLastPlayedEpisodeForSeries(seriesIdx) {
+      let history = [];
+      try {
+        const savedHistory = localStorage.getItem('playHistory');
+        if (savedHistory) {
+          history = JSON.parse(savedHistory);
+        }
+      } catch (e) {
+        console.error('加载播放历史失败:', e);
+        return null;
+      }
+
+      // 历史记录已按时间倒序排列，找到的第一个就是最新的
+      const lastPlayed = history.find(item => item.seriesIndex === seriesIdx);
+
+      if (lastPlayed) {
+        // 确保该剧集仍然存在于数据中
+        if (seriesData[lastPlayed.seriesIndex] && seriesData[lastPlayed.seriesIndex].episodes[lastPlayed.episodeIndex]) {
+          return {
+            episodeIndex: lastPlayed.episodeIndex,
+            time: lastPlayed.currentTime
+          };
+        }
+      }
+
+      return null; // 没有找到该系列的播放记录
     }
 
     // 显示空状态
