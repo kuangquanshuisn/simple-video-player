@@ -6,8 +6,27 @@
   <title>视频在线播放</title>
   <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
   <link href="dark-theme.css" rel="stylesheet" />
+  <link href="light-theme.css" rel="stylesheet" />
 </head>
 <body>
+  <!-- 主题切换按钮和菜单 -->
+  <div class="theme-toggle-container">
+    <button class="theme-toggle-btn" id="theme-toggle-btn" aria-label="主题设置">
+      ⚙️
+    </button>
+    <div class="theme-menu" id="theme-menu">
+      <button class="theme-option" data-theme="dark" id="dark-theme-option">
+        <span class="icon">🌙</span>
+        <span>深色主题</span>
+        <span class="checkmark">✓</span>
+      </button>
+      <button class="theme-option" data-theme="light" id="light-theme-option">
+        <span class="icon">☀️</span>
+        <span>浅色主题</span>
+        <span class="checkmark">✓</span>
+      </button>
+    </div>
+  </div>
 
   <div id="password-overlay">
     <div class="password-modal">
@@ -106,6 +125,113 @@
 
   <script src="data.js"></script>
   <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+  <script>
+    // =====================================
+    // 主题切换功能
+    // =====================================
+    
+    // 主题管理类
+    class ThemeManager {
+      constructor() {
+        this.currentTheme = 'dark'; // 默认主题
+        this.init();
+      }
+      
+      init() {
+        // 从localStorage读取保存的主题偏好
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
+          this.currentTheme = savedTheme;
+        } else {
+          // 如果没有保存的偏好，检测系统主题
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            this.currentTheme = 'light';
+          }
+        }
+        
+        // 应用主题
+        this.applyTheme(this.currentTheme);
+        
+        // 设置事件监听
+        this.setupEventListeners();
+      }
+      
+      applyTheme(theme) {
+        const html = document.documentElement;
+        html.setAttribute('data-theme', theme);
+        this.currentTheme = theme;
+        
+        // 更新UI状态
+        this.updateThemeMenuState();
+        
+        // 保存到localStorage
+        localStorage.setItem('theme', theme);
+        
+        console.log(`主题已切换到: ${theme}`);
+      }
+      
+      updateThemeMenuState() {
+        const options = document.querySelectorAll('.theme-option');
+        options.forEach(option => {
+          const optionTheme = option.getAttribute('data-theme');
+          if (optionTheme === this.currentTheme) {
+            option.classList.add('active');
+          } else {
+            option.classList.remove('active');
+          }
+        });
+      }
+      
+      setupEventListeners() {
+        const toggleBtn = document.getElementById('theme-toggle-btn');
+        const themeMenu = document.getElementById('theme-menu');
+        const themeOptions = document.querySelectorAll('.theme-option');
+        
+        // 设置按钮点击事件
+        toggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          themeMenu.classList.toggle('show');
+        });
+        
+        // 主题选项点击事件
+        themeOptions.forEach(option => {
+          option.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const selectedTheme = option.getAttribute('data-theme');
+            this.applyTheme(selectedTheme);
+            themeMenu.classList.remove('show');
+          });
+        });
+        
+        // 点击其他地方关闭菜单
+        document.addEventListener('click', () => {
+          themeMenu.classList.remove('show');
+        });
+        
+        // 阻止菜单内部点击事件冒泡
+        themeMenu.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+        
+        // 监听系统主题变化
+        if (window.matchMedia) {
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+              // 只有在用户没有手动设置主题时才跟随系统
+              this.applyTheme(e.matches ? 'dark' : 'light');
+            }
+          });
+        }
+      }
+    }
+    
+    // 初始化主题管理器
+    let themeManager;
+    document.addEventListener('DOMContentLoaded', () => {
+      themeManager = new ThemeManager();
+    });
+    
+  </script>
   <script>
     // 全局变量
     let seriesData = [];
