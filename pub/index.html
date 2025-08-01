@@ -28,6 +28,13 @@
     </div>
   </div>
 
+  <!-- 视频列表切换按钮 -->
+  <div class="sidebar-toggle-container">
+    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" aria-label="显示视频列表">
+      ☰
+    </button>
+  </div>
+
   <div id="password-overlay">
     <div class="password-modal">
       <h2>请输入访问密码</h2>
@@ -93,10 +100,15 @@
   </div>
 
   <div class="container">
-    <div class="sidebar">
-      <div class="sidebar-tabs">
-        <div class="sidebar-tab active" data-tab="series" onclick="switchTab('series')">视频列表</div>
-        <div class="sidebar-tab" data-tab="history" onclick="switchTab('history')">播放历史</div>
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-tabs">
+          <div class="sidebar-tab active" data-tab="series" onclick="switchTab('series')">视频列表</div>
+          <div class="sidebar-tab" data-tab="history" onclick="switchTab('history')">播放历史</div>
+        </div>
+        <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="隐藏视频列表">
+          ✕
+        </button>
       </div>
       <div class="sidebar-content">
         <div id="series-tab" class="tab-content" style="display: block;">
@@ -229,7 +241,59 @@
     let themeManager;
     document.addEventListener('DOMContentLoaded', () => {
       themeManager = new ThemeManager();
+      initializeSidebarToggle();
     });
+
+    // =====================================
+    // 侧边栏切换功能
+    // =====================================
+    
+    function initializeSidebarToggle() {
+      const sidebar = document.getElementById('sidebar');
+      const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+      const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+      const container = document.querySelector('.container');
+      
+      let sidebarVisible = true; // 默认显示
+      
+      // 显示侧边栏
+      function showSidebar() {
+        sidebar.classList.remove('sidebar-hidden');
+        sidebar.classList.add('sidebar-visible');
+        container.classList.remove('sidebar-collapsed');
+        container.classList.add('sidebar-expanded');
+        sidebarToggleBtn.style.display = 'none';
+        sidebarVisible = true;
+        
+        // 保存状态
+        localStorage.setItem('sidebarVisible', 'true');
+      }
+      
+      // 隐藏侧边栏
+      function hideSidebar() {
+        sidebar.classList.remove('sidebar-visible');
+        sidebar.classList.add('sidebar-hidden');
+        container.classList.remove('sidebar-expanded');
+        container.classList.add('sidebar-collapsed');
+        sidebarToggleBtn.style.display = 'flex';
+        sidebarVisible = false;
+        
+        // 保存状态
+        localStorage.setItem('sidebarVisible', 'false');
+      }
+      
+      // 初始化状态
+      const savedState = localStorage.getItem('sidebarVisible');
+      if (savedState === 'false') {
+        hideSidebar();
+      } else {
+        showSidebar();
+      }
+      
+      // 绑定事件
+      sidebarToggleBtn.addEventListener('click', showSidebar);
+      sidebarCloseBtn.addEventListener('click', hideSidebar);
+    }
     
   </script>
   <script>
