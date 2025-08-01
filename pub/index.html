@@ -5,466 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>视频在线播放</title>
   <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
-  <style>
-  /* --- 1. 设计体系：CSS变量定义 --- */
-  :root {
-    --primary-color: #007bff;
-    --primary-color-light: #e6f2ff;
-    --success-color: #28a745;
-    --danger-color: #dc3545;
-    --danger-color-light: #fbebee;
-    
-    --text-primary: #1f2937;
-    --text-secondary: #6b7280;
-    --text-light: #ffffff;
-    
-    --bg-body: #f4f6f9;
-    --bg-container: #ffffff;
-    --bg-light: #f8f9fa;
-    --bg-hover: #e9ecef;
-    
-    --border-color: #e5e7eb;
-    
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-full: 9999px;
-    
-    --spacing-1: 4px;
-    --spacing-2: 8px;
-    --spacing-3: 12px;
-    --spacing-4: 16px;
-    --spacing-5: 20px;
-    --spacing-6: 24px;
-    --spacing-8: 32px;
-  }
-  
-  /* --- 2. 全局和基础样式 --- */
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background: var(--bg-body);
-    color: var(--text-primary);
-    margin: 0;
-    height: 100vh;
-    overflow: hidden;
-    font-size: 14px;
-    /* ↓↓↓ 新增此行以适配iOS顶部安全区域 ↓↓↓ */
-    padding-top: env(safe-area-inset-top);
-  }
-
-  * {
-    box-sizing: border-box;
-  }
-
-  /* --- 3. 主布局 --- */
-  .container {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    display: none; 
-  }
-
-  .sidebar {
-    width: 280px;
-    background: var(--bg-container);
-    border-right: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-  }
-
-  .main-content {
-    flex-grow: 1;
-    padding: var(--spacing-6);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-  }
-
-  /* --- 4. 侧边栏样式 --- */
-  .sidebar-tabs {
-    display: flex;
-    padding: var(--spacing-1);
-    background: var(--bg-light);
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  .sidebar-tab {
-    flex: 1;
-    padding: var(--spacing-2) var(--spacing-3);
-    text-align: center;
-    cursor: pointer;
-    font-weight: 500;
-    color: var(--text-secondary);
-    border-radius: var(--radius-sm);
-    transition: all 0.2s ease;
-    user-select: none;
-  }
-
-  .sidebar-tab:hover {
-    background-color: var(--bg-hover);
-    color: var(--text-primary);
-  }
-
-  .sidebar-tab.active {
-    background-color: var(--bg-container);
-    color: var(--primary-color);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .sidebar-content {
-    padding: var(--spacing-4);
-    flex-grow: 1;
-    overflow-y: auto;
-    position: relative;
-    padding-bottom: 80px; /* 为按钮留出空间 */
-  }
-
-  .sidebar ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .sidebar li {
-    padding: var(--spacing-3);
-    cursor: pointer;
-    border-radius: var(--radius-md);
-    margin-bottom: var(--spacing-2);
-    transition: background-color 0.2s ease, color 0.2s ease;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-weight: 500;
-    font-size: 18px; /* <-- 本地视频字体 */
-
-  }
-
-  .sidebar li:hover {
-    background-color: var(--bg-light);
-  }
-
-  .sidebar li.active {
-    background-color: var(--primary-color);
-    color: var(--text-light);
-    font-weight: 600;
-  }
-  .sidebar li.active:hover {
-    background-color: var(--primary-color); /* 激活状态hover不变色 */
-  }
-
-  .series-name {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .delete-btn {
-    background: transparent;
-    color: var(--danger-color);
-    border: none;
-    border-radius: var(--radius-full);
-    width: 24px;
-    height: 24px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    margin-left: var(--spacing-2);
-    transition: background-color 0.2s, color 0.2s;
-  }
-  .sidebar li:hover .delete-btn { display: flex; }
-  .sidebar li.active .delete-btn { color: var(--text-light); }
-  .delete-btn:hover { background: rgba(0,0,0,0.1); }
-
-
-  .add-video-btn {
-    position: absolute;
-    bottom: var(--spacing-5);
-    left: var(--spacing-4);
-    right: var(--spacing-4);
-    height: 44px;
-    background: var(--success-color);
-    color: var(--text-light);
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    box-shadow: var(--shadow-md);
-  }
-  .add-video-btn:hover { background: #218838; }
-  .add-video-btn:active { transform: scale(0.98); }
-  
-  /* --- 5. 播放历史样式 --- */
-  .history-item {
-    padding: var(--spacing-3);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    margin-bottom: var(--spacing-2);
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .history-item:hover {
-    border-color: var(--primary-color);
-    background-color: var(--primary-color-light);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-  }
-  .history-title { font-weight: 600; color: var(--text-primary); margin-bottom: var(--spacing-1); }
-  .history-episode { font-size: 13px; color: var(--text-secondary); margin-bottom: var(--spacing-1); }
-  .history-progress { font-size: 12px; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; }
-  .history-time { color: var(--text-secondary); }
-  .history-clear {
-    width: 100%;
-    padding: var(--spacing-2);
-    background-color: var(--danger-color-light);
-    color: var(--danger-color);
-    border: 1px solid var(--danger-color);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    font-size: 13px;
-    margin-top: var(--spacing-4);
-    transition: all 0.2s ease;
-    font-weight: 500;
-  }
-  .history-clear:hover { background-color: var(--danger-color); color: var(--text-light); }
-  .no-history { text-align: center; color: var(--text-secondary); padding: var(--spacing-8) 0; }
-
- /* --- 6. 主播放区域 --- */
-.player-container {
-  position: relative;
-  width: 100%;
-  max-width: 1000px;
-  margin: 0 auto;
-  background: #000;
-  border-radius: var(--radius-lg); /* 保留圆角以适配阴影 */
-  /* overflow: hidden; */ /* <-- 问题所在，已移除 */
-  box-shadow: var(--shadow-md);
-}
-
-.video-js {
-  width: 100%;
-  height: 0;
-  padding-top: 56.25%; /* 16:9 aspect ratio */
-  /* ↓ 新增 ↓ */
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-  .combined-title {
-    text-align: center;
-    margin: var(--spacing-2) 0 var(--spacing-6);
-    font-size: 22px;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-  
-  .episode-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-2);
-    padding: var(--spacing-5) 0;
-    justify-content: flex-start;
-    max-width: 1000px;
-    width: 100%;
-    margin: 0 auto 20px;
-  }
-
-  .episode-btn {
-    padding: var(--spacing-2) var(--spacing-4);
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-container);
-    color: var(--text-secondary);
-    cursor: pointer;
-    border-radius: var(--radius-md);
-    font-size: 14px;
-    transition: all 0.2s ease;
-    position: relative;
-    font-weight: 500;
-  }
-
-  .episode-btn:hover {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-    transform: translateY(-2px);
-  }
-
-  .episode-btn.active {
-    background-color: var(--primary-color);
-    color: var(--text-light);
-    border-color: var(--primary-color);
-    font-weight: 600;
-  }
-
-  .episode-delete {
-    position: absolute;
-    top: -10px; right: -10px;
-    background: var(--danger-color);
-    color: var(--text-light);
-    border: 2px solid var(--bg-container);
-    border-radius: var(--radius-full);
-    width: 22px; height: 22px;
-    font-size: 12px; cursor: pointer;
-    display: none; align-items: center; justify-content: center;
-    box-shadow: var(--shadow-sm);
-  }
-  .episode-btn:hover .episode-delete { display: flex; }
-
-  .add-episode-btn {
-    padding: var(--spacing-2) var(--spacing-4);
-    border: 2px dashed var(--success-color);
-    background-color: transparent;
-    color: var(--success-color);
-    cursor: pointer;
-    border-radius: var(--radius-md);
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-  }
-  .add-episode-btn:hover { background-color: var(--success-color); color: var(--text-light); }
-
-  /* --- 7. 密码和恢复覆盖层 --- */
-  #password-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.7); display: flex;
-    justify-content: center; align-items: center; z-index: 9999; display: none; 
-    backdrop-filter: blur(4px);
-  }
-  .password-modal {
-    background: var(--bg-container); padding: var(--spacing-8); border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md); text-align: center;
-  }
-  .password-modal h2 { margin-top: 0; margin-bottom: var(--spacing-5); color: var(--text-primary); }
-  .password-modal input {
-    padding: var(--spacing-3); width: 220px; border: 1px solid var(--border-color);
-    border-radius: var(--radius-md); font-size: 16px; margin-right: var(--spacing-2);
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  .password-modal input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px var(--primary-color-light);
-  }
-  .password-modal button {
-    padding: var(--spacing-3) var(--spacing-5); font-size: 16px; cursor: pointer;
-    background-color: var(--primary-color); color: var(--text-light); border: none; 
-    border-radius: var(--radius-md); transition: background-color 0.2s;
-  }
-  .password-modal button:hover { background-color: #0069d9; }
-  .password-modal p.error { color: var(--danger-color); height: var(--spacing-4); margin-top: var(--spacing-3); margin-bottom: 0; }
-  
-  #restore-overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.6); color: var(--text-light);
-    font-size: 18px; line-height: 1.5;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    text-align: center; cursor: pointer; z-index: 10; display: none;
-  }
-  
-  /* --- 8. 添加/编辑弹窗 --- */
-  #add-video-overlay, #add-episode-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 9998; display: none; backdrop-filter: blur(4px);
-  }
-  
-  .add-video-modal, .add-episode-modal {
-    background: var(--bg-container);
-    padding: var(--spacing-6);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
-    width: 90%;
-    max-width: 500px;
-  }
-  .add-video-modal h3, .add-episode-modal h3 {
-    margin-top: 0; margin-bottom: var(--spacing-6);
-    color: var(--text-primary); text-align: center; font-size: 20px;
-  }
-  .form-group { margin-bottom: var(--spacing-4); }
-  .form-group label { display: block; margin-bottom: var(--spacing-2); font-weight: 500; color: var(--text-primary); }
-  .form-group input {
-    width: 100%; padding: var(--spacing-3);
-    border: 1px solid var(--border-color); border-radius: var(--radius-md);
-    font-size: 14px; transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  .form-group input:focus {
-    outline: none; border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px var(--primary-color-light);
-  }
-
-  .episode-inputs {
-    border: 1px solid var(--border-color); border-radius: var(--radius-md);
-    padding: var(--spacing-4); margin-bottom: var(--spacing-4); background: var(--bg-light);
-  }
-  .episode-inputs h4 { margin: 0 0 var(--spacing-4) 0; color: var(--text-primary); font-size: 14px; font-weight: 500;}
-  .episode-input-group { display: flex; gap: var(--spacing-2); margin-bottom: var(--spacing-2); align-items: center; }
-  .episode-input-group input { flex: 1; margin-bottom: 0; }
-  .remove-episode-btn {
-    background: var(--danger-color-light); color: var(--danger-color); border: none;
-    border-radius: var(--radius-full); width: 32px; height: 32px;
-    cursor: pointer; font-size: 16px; font-weight: bold; flex-shrink: 0;
-    transition: background-color 0.2s, color 0.2s;
-  }
-  .remove-episode-btn:hover { background: var(--danger-color); color: var(--text-light); }
-  .add-episode-input-btn {
-    background: transparent; color: var(--success-color); border: 1px solid var(--success-color);
-    border-radius: var(--radius-md); padding: var(--spacing-2) var(--spacing-3);
-    cursor: pointer; font-size: 14px; font-weight: 500;
-    margin-top: var(--spacing-2); transition: all 0.2s;
-  }
-  .add-episode-input-btn:hover { background-color: var(--success-color); color: var(--text-light); }
-
-  .modal-buttons { display: flex; justify-content: flex-end; gap: var(--spacing-3); margin-top: var(--spacing-6); }
-  .modal-buttons button {
-    padding: var(--spacing-3) var(--spacing-5); border: none;
-    border-radius: var(--radius-md); cursor: pointer;
-    font-size: 14px; font-weight: 500; transition: all 0.2s;
-  }
-  .btn-cancel { background: var(--bg-light); color: var(--text-secondary); }
-  .btn-cancel:hover { background: var(--bg-hover); }
-  .btn-save { background: var(--primary-color); color: var(--text-light); }
-  .btn-save:hover { background-color: #0069d9; }
-
-  /* --- 9. 其他状态和指示器 --- */
-  .empty-state {
-    text-align: center;
-    color: var(--text-secondary);
-    font-size: 16px;
-    padding: 80px 20px;
-    display: none;
-    flex-grow: 1;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-  }
-  .empty-state p { margin-bottom: 20px; line-height: 1.6; }
-
-  .datajs-indicator::after {
-    content: "";
-    background-color: var(--bg-light);
-    color: var(--text-secondary);
-    font-weight: normal;
-  }
-  .sidebar li.active .datajs-indicator::after {
-    background-color: rgba(255,255,255,0.2);
-    color: var(--text-light);
-  }
-</style>
+  <link href="dark-theme.css" rel="stylesheet" />
+  <link href="light-theme.css" rel="stylesheet" />
 </head>
 <body>
+  <!-- 主题切换按钮和菜单 -->
+  <div class="theme-toggle-container">
+    <button class="theme-toggle-btn" id="theme-toggle-btn" aria-label="主题设置">
+      ⚙️
+    </button>
+    <div class="theme-menu" id="theme-menu">
+      <button class="theme-option" data-theme="dark" id="dark-theme-option">
+        <span class="icon">🌙</span>
+        <span>深色主题</span>
+        <span class="checkmark">✓</span>
+      </button>
+      <button class="theme-option" data-theme="light" id="light-theme-option">
+        <span class="icon">☀️</span>
+        <span>浅色主题</span>
+        <span class="checkmark">✓</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 视频列表切换按钮 -->
+  <div class="sidebar-toggle-container">
+    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" aria-label="显示视频列表">
+      ☰
+    </button>
+  </div>
 
   <div id="password-overlay">
     <div class="password-modal">
@@ -531,10 +100,15 @@
   </div>
 
   <div class="container">
-    <div class="sidebar">
-      <div class="sidebar-tabs">
-        <div class="sidebar-tab active" data-tab="series" onclick="switchTab('series')">视频列表</div>
-        <div class="sidebar-tab" data-tab="history" onclick="switchTab('history')">播放历史</div>
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-tabs">
+          <div class="sidebar-tab active" data-tab="series" onclick="switchTab('series')">视频列表</div>
+          <div class="sidebar-tab" data-tab="history" onclick="switchTab('history')">播放历史</div>
+        </div>
+        <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="隐藏视频列表">
+          ✕
+        </button>
       </div>
       <div class="sidebar-content">
         <div id="series-tab" class="tab-content" style="display: block;">
@@ -563,6 +137,165 @@
 
   <script src="data.js"></script>
   <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+  <script>
+    // =====================================
+    // 主题切换功能
+    // =====================================
+    
+    // 主题管理类
+    class ThemeManager {
+      constructor() {
+        this.currentTheme = 'dark'; // 默认主题
+        this.init();
+      }
+      
+      init() {
+        // 从localStorage读取保存的主题偏好
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
+          this.currentTheme = savedTheme;
+        } else {
+          // 如果没有保存的偏好，检测系统主题
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            this.currentTheme = 'light';
+          }
+        }
+        
+        // 应用主题
+        this.applyTheme(this.currentTheme);
+        
+        // 设置事件监听
+        this.setupEventListeners();
+      }
+      
+      applyTheme(theme) {
+        const html = document.documentElement;
+        html.setAttribute('data-theme', theme);
+        this.currentTheme = theme;
+        
+        // 更新UI状态
+        this.updateThemeMenuState();
+        
+        // 保存到localStorage
+        localStorage.setItem('theme', theme);
+        
+        console.log(`主题已切换到: ${theme}`);
+      }
+      
+      updateThemeMenuState() {
+        const options = document.querySelectorAll('.theme-option');
+        options.forEach(option => {
+          const optionTheme = option.getAttribute('data-theme');
+          if (optionTheme === this.currentTheme) {
+            option.classList.add('active');
+          } else {
+            option.classList.remove('active');
+          }
+        });
+      }
+      
+      setupEventListeners() {
+        const toggleBtn = document.getElementById('theme-toggle-btn');
+        const themeMenu = document.getElementById('theme-menu');
+        const themeOptions = document.querySelectorAll('.theme-option');
+        
+        // 设置按钮点击事件
+        toggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          themeMenu.classList.toggle('show');
+        });
+        
+        // 主题选项点击事件
+        themeOptions.forEach(option => {
+          option.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const selectedTheme = option.getAttribute('data-theme');
+            this.applyTheme(selectedTheme);
+            themeMenu.classList.remove('show');
+          });
+        });
+        
+        // 点击其他地方关闭菜单
+        document.addEventListener('click', () => {
+          themeMenu.classList.remove('show');
+        });
+        
+        // 阻止菜单内部点击事件冒泡
+        themeMenu.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+        
+        // 监听系统主题变化
+        if (window.matchMedia) {
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+              // 只有在用户没有手动设置主题时才跟随系统
+              this.applyTheme(e.matches ? 'dark' : 'light');
+            }
+          });
+        }
+      }
+    }
+    
+    // 初始化主题管理器
+    let themeManager;
+    document.addEventListener('DOMContentLoaded', () => {
+      themeManager = new ThemeManager();
+      initializeSidebarToggle();
+    });
+
+    // =====================================
+    // 侧边栏切换功能
+    // =====================================
+    
+    function initializeSidebarToggle() {
+      const sidebar = document.getElementById('sidebar');
+      const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+      const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+      const container = document.querySelector('.container');
+      
+      let sidebarVisible = true; // 默认显示
+      
+      // 显示侧边栏
+      function showSidebar() {
+        sidebar.classList.remove('sidebar-hidden');
+        sidebar.classList.add('sidebar-visible');
+        container.classList.remove('sidebar-collapsed');
+        container.classList.add('sidebar-expanded');
+        sidebarToggleBtn.style.display = 'none';
+        sidebarVisible = true;
+        
+        // 保存状态
+        localStorage.setItem('sidebarVisible', 'true');
+      }
+      
+      // 隐藏侧边栏
+      function hideSidebar() {
+        sidebar.classList.remove('sidebar-visible');
+        sidebar.classList.add('sidebar-hidden');
+        container.classList.remove('sidebar-expanded');
+        container.classList.add('sidebar-collapsed');
+        sidebarToggleBtn.style.display = 'flex';
+        sidebarVisible = false;
+        
+        // 保存状态
+        localStorage.setItem('sidebarVisible', 'false');
+      }
+      
+      // 初始化状态
+      const savedState = localStorage.getItem('sidebarVisible');
+      if (savedState === 'false') {
+        hideSidebar();
+      } else {
+        showSidebar();
+      }
+      
+      // 绑定事件
+      sidebarToggleBtn.addEventListener('click', showSidebar);
+      sidebarCloseBtn.addEventListener('click', hideSidebar);
+    }
+    
+  </script>
   <script>
     // 全局变量
     let seriesData = [];
