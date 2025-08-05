@@ -1019,13 +1019,24 @@
       const mainContainer = document.querySelector('.container');
       
       const correctPassword = '666666';
+      const AUTH_DURATION = 90 * 24 * 60 * 60 * 1000; // 3个月有效期（毫秒）
+      const AUTH_KEY = 'videoPlayerAuth';
 
       function authenticate() {
         if (passwordInput.value === correctPassword) {
-          sessionStorage.setItem('isAuthenticated', 'true');
+          // 使用localStorage替代sessionStorage，并添加时间戳
+          const authData = {
+            isAuthenticated: true,
+            timestamp: Date.now(),
+            expiry: Date.now() + AUTH_DURATION
+          };
+          localStorage.setItem(AUTH_KEY, JSON.stringify(authData));
+          
           passwordOverlay.style.display = 'none';
           mainContainer.style.display = 'flex';
           initializePlayer();
+          
+          console.log('认证成功，有效期3个月');
         } else {
           passwordError.textContent = '密码错误，请重试！';
           passwordInput.value = '';
@@ -1033,7 +1044,34 @@
         }
       }
 
-      if (sessionStorage.getItem('isAuthenticated') === 'true') {
+      function checkAuthentication() {
+        try {
+          const authDataStr = localStorage.getItem(AUTH_KEY);
+          if (!authDataStr) {
+            return false;
+          }
+          
+          const authData = JSON.parse(authDataStr);
+          const now = Date.now();
+          
+          // 检查认证是否过期
+          if (now > authData.expiry) {
+            localStorage.removeItem(AUTH_KEY);
+            console.log('认证已过期，需要重新输入密码');
+            return false;
+          }
+          
+          console.log('认证有效，剩余时间：', Math.round((authData.expiry - now) / (24 * 60 * 60 * 1000)), '天');
+          return authData.isAuthenticated === true;
+        } catch (e) {
+          console.error('认证检查失败:', e);
+          localStorage.removeItem(AUTH_KEY);
+          return false;
+        }
+      }
+
+      // 检查认证状态
+      if (checkAuthentication()) {
         mainContainer.style.display = 'flex';
         initializePlayer();
       } else {
