@@ -1092,15 +1092,104 @@
       // 设置表单处理器
       setupFormHandlers();
       
-      const player = videojs('my-video', { 
-        responsive: true, 
+      const player = videojs('my-video', {
+        responsive: true,
         fluid: true,
         html5: {
+          // 原生 HTML5 视频优化
+          nativeVideoTracks: false,
+          nativeAudioTracks: false,
+          nativeTextTracks: false,
+          // HLS 流媒体优化配置
           hls: {
             enableLowInitialPlaylist: true,
-            smoothQualityChange: true
+            smoothQualityChange: true,
+            overrideNative: true,
+            // 增加缓冲区大小，提前加载更多内容
+            maxBufferLength: 60,        // 最大缓冲60秒
+            maxMaxBufferLength: 120,    // 极限缓冲120秒
+            maxBufferSize: 60 * 1000 * 1000,  // 最大缓冲大小 60MB
+            maxBufferHole: 0.5,         // 允许的最大缓冲空洞
+            // 初始加载优化
+            lowBufferWatchdogPeriod: 0.5,  // 低缓冲检测周期
+            highBufferWatchdogPeriod: 3,   // 高缓冲检测周期
+            // 分段加载策略
+            nudgeMaxRetry: 3,           // 分段加载重试次数
+            nudgeOffset: 0.1,           // 分段偏移量
+            maxFragLookUpTolerance: 0.25,  // 分段查找容差
+            // 启用快速切换
+            enableWorker: true,         // 启用 Web Worker 提升性能
+            enableSoftwareAES: true,    // 软件 AES 解密
+            manifestLoadingTimeOut: 10000,      // manifest 加载超时 10秒
+            manifestLoadingMaxRetry: 4,         // manifest 加载重试次数
+            manifestLoadingRetryDelay: 1000,    // manifest 重试延迟
+            levelLoadingTimeOut: 10000,         // 级别加载超时
+            levelLoadingMaxRetry: 4,            // 级别加载重试次数
+            fragLoadingTimeOut: 20000,          // 分段加载超时 20秒
+            fragLoadingMaxRetry: 6,             // 分段加载重试次数
+            fragLoadingRetryDelay: 1000,        // 分段重试延迟
+            // 启动优化
+            startLevel: -1,             // 自动选择起始质量（-1为自动）
+            abrEwmaDefaultEstimate: 500000,  // 默认带宽估计 500kbps
+            abrBandWidthFactor: 0.95,   // 带宽因子
+            abrBandWidthUpFactor: 0.7,  // 带宽上升因子
+            abrMaxWithRealBitrate: false,
+            maxStarvationDelay: 4,      // 最大饥饿延迟
+            maxLoadingDelay: 4,         // 最大加载延迟
+            minAutoBitrate: 0,          // 最小自动比特率
+            // 实时流优化
+            liveSyncDurationCount: 3,   // 实时同步持续时间
+            liveMaxLatencyDurationCount: 10,  // 最大延迟
+            liveDurationInfinity: false,
+            // 其他优化
+            stretchShortVideoTrack: false,
+            maxAudioFramesDrift: 1,
+            forceKeyFrameOnDiscontinuity: true,
+            // 启用自适应比特率
+            capLevelToPlayerSize: false,  // 不限制质量到播放器大小
+            capLevelOnFPSDrop: false      // FPS 下降时不降低质量
+          },
+          // VHS (Video.js HTTP Streaming) 配置
+          vhs: {
+            overrideNative: true,
+            withCredentials: false,
+            // 带宽估计
+            bandwidth: 4194304,         // 初始带宽估计 4Mbps
+            enableLowInitialPlaylist: true,
+            smoothQualityChange: true,
+            fastQualityChange: true,
+            // 缓冲配置
+            bufferBasedABR: true,       // 基于缓冲的自适应比特率
+            useDevicePixelRatio: true,  // 使用设备像素比
+            limitRenditionByPlayerDimensions: false,
+            allowSeeksWithinUnsafeLiveWindow: true,
+            // 实验性功能
+            experimentalBufferBasedABR: true,
+            experimentalLLHLS: false
           }
-        }
+        },
+        // 播放器级别的缓冲优化
+        liveui: false,
+        liveTracker: {
+          trackingThreshold: 20,
+          liveTolerance: 15
+        },
+        // 控制栏配置
+        controlBar: {
+          volumePanel: {
+            inline: false
+          }
+        },
+        // 预加载策略
+        preload: 'auto',              // 自动预加载
+        autoplay: false,              // 不自动播放（需要用户交互）
+        // 其他性能优化
+        techOrder: ['html5'],         // 优先使用 HTML5
+        playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],  // 播放速度选项
+        // 错误重试
+        retryOnError: true,
+        // 语言
+        language: 'zh-CN'
       });
       
       // 将player设为全局变量，供其他函数使用
