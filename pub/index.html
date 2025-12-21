@@ -619,6 +619,7 @@
   </div>
 
   <script src="data.js"></script>
+  <script src="speed-test.js"></script>
   <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
   <script>
     // 全局变量
@@ -1521,12 +1522,32 @@
         series.channels.forEach((channel, index) => {
           const btn = document.createElement('button');
           btn.className = 'channel-btn';
-          btn.textContent = channel.name;
+
+          // 获取速度信息并显示
+          const speedInfo = window.SpeedTest.getChannelSpeed(series.title, channel.name);
+          let displayText = channel.name;
+
+          if (speedInfo && speedInfo.speed) {
+            displayText += ` (${speedInfo.speed} KB/s)`;
+          } else {
+            displayText += ' (测速中...)';
+          }
+
+          btn.textContent = displayText;
           btn.addEventListener('click', () => switchChannel(seriesIdx, index));
           channelButtonsEl.appendChild(btn);
         });
 
         updateChannelActiveState();
+      }
+
+      // UI更新函数 - 更新渠道速度显示
+      function updateChannelSpeedDisplay() {
+        // 如果当前系列有多个渠道，更新渠道选择器
+        if (seriesData[currentSeriesIndex] &&
+            seriesData[currentSeriesIndex].channels.length > 1) {
+          renderChannelSelector(currentSeriesIndex);
+        }
       }
 
       function switchChannel(seriesIdx, channelIdx) {
@@ -1658,6 +1679,15 @@
           displayEpisodes(0);
           playEpisode(0, 0, 0);
         }
+
+        // 设置速度测试的UI更新回调
+        window.SpeedTest.setUpdateCallback(updateChannelSpeedDisplay);
+
+        // 启动速度测试调度器
+        window.SpeedTest.startSpeedTestScheduler(
+          () => seriesData,  // 获取系列数据
+          () => currentEpisodeIndex  // 获取当前集数
+        );
       }
 
       init();
