@@ -45,6 +45,15 @@
     return data.channelSpeeds[seriesTitle]?.[channelName] || null;
   }
 
+  // 清除特定渠道的速度数据
+  function clearChannelSpeed(seriesTitle, channelName) {
+    const data = loadSpeedData();
+    if (data.channelSpeeds[seriesTitle]) {
+      delete data.channelSpeeds[seriesTitle][channelName];
+    }
+    saveSpeedData(data);
+  }
+
   // 保存特定渠道的速度
   function saveChannelSpeed(seriesTitle, channelName, speed, episodeIndex, channelIndex) {
     const data = loadSpeedData();
@@ -165,6 +174,22 @@
 
     const seriesData = getSeriesDataFunc();
     const currentEpisodeIndex = getCurrentEpisodeIndexFunc();
+
+    // 如果是强制测速，先清除所有渠道的缓存数据
+    if (force) {
+      console.log('强制测速：清除所有渠道缓存...');
+      for (let seriesIdx = 0; seriesIdx < seriesData.length; seriesIdx++) {
+        const series = seriesData[seriesIdx];
+        for (let channelIdx = 0; channelIdx < series.channels.length; channelIdx++) {
+          const channel = series.channels[channelIdx];
+          clearChannelSpeed(series.title, channel.name);
+        }
+      }
+      // 立即更新UI显示"测速中..."
+      if (updateCallback && typeof updateCallback === 'function') {
+        updateCallback();
+      }
+    }
 
     console.log('开始批量测速...');
     const startTime = Date.now();
