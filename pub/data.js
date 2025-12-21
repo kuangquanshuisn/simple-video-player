@@ -2,7 +2,10 @@
 const playerData = [
   {
     title: "回家的路有多远",
-    episodes: [
+    channels: [
+      {
+        name: "卧龙资源",
+        episodes: [
       { name: "第01集", url: "https://cdn.wlcdn88.com:777/20220420/xjPSLTlP/index.m3u8" },
       { name: "第02集", url: "https://cdn.wlcdn88.com:777/20220420/gsZZqCek/index.m3u8" },
       { name: "第03集", url: "https://cdn.wlcdn88.com:777/20220420/I4azcl0F/index.m3u8" },
@@ -48,11 +51,16 @@ const playerData = [
       { name: "第43集", url: "https://cdn.wlcdn88.com:777/20220420/xzSfwobG/index.m3u8" },
       { name: "第44集", url: "https://cdn.wlcdn88.com:777/20220420/1SgNteu8/index.m3u8" },
       { name: "第45集", url: "https://cdn.wlcdn88.com:777/20220420/XdoFOZTv/index.m3u8" }
+        ]
+      }
     ]
   },
   {
     title: "俺娘田小草",
-    episodes: [
+    channels: [
+      {
+        name: "卧龙资源",
+        episodes: [
       { name: "第01集", url: "https://cdn.wlcdn88.com:777/pg9OvX36/index.m3u8" },
       { name: "第02集", url: "https://cdn.wlcdn88.com:777/9oWDSgQq/index.m3u8" },
       { name: "第03集", url: "https://cdn.wlcdn88.com:777/Rg2taE0k/index.m3u8" },
@@ -107,11 +115,16 @@ const playerData = [
       { name: "第52集", url: "https://cdn.wlcdn88.com:777/RAmfwbnO/index.m3u8" },
       { name: "第53集", url: "https://cdn.wlcdn88.com:777/IZOGskuz/index.m3u8" },
       { name: "第54集", url: "https://cdn.wlcdn88.com:777/v16KfjC9/index.m3u8" }
+        ]
+      }
     ]
   },
   {
     title: "因为爱情有多美",
-    episodes: [
+    channels: [
+      {
+        name: "卧龙资源",
+        episodes: [
         { name: "第01集", url: "https://cdn.wlcdn88.com:777/CJ9txiqW/index.m3u8" },
         { name: "第02集", url: "https://cdn.wlcdn88.com:777/oNJcvBGP/index.m3u8" },
         { name: "第03集", url: "https://cdn.wlcdn88.com:777/lsb5uB40/index.m3u8" },
@@ -220,11 +233,16 @@ const playerData = [
         { name: "第106集", url: "https://cdn.wlcdn88.com:777/jNwspfQl/index.m3u8" },
         { name: "第107集", url: "https://cdn.wlcdn88.com:777/xeliSR4n/index.m3u8" },
         { name: "第108集", url: "https://cdn.wlcdn88.com:777/XIKNuaFP/index.m3u8" }
+        ]
+      }
     ]
   },
   {
     title: "因为爱情有奇迹",
-    episodes: [
+    channels: [
+      {
+        name: "卧龙资源",
+        episodes: [
         { name: "第01集", url: "https://cdn.wlcdn88.com:777/20220527/wWlPZzQB/index.m3u8" },
         { name: "第02集", url: "https://cdn.wlcdn88.com:777/20220527/uUjrl1bo/index.m3u8" },
         { name: "第03集", url: "https://cdn.wlcdn88.com:777/20220527/1d1BObr2/index.m3u8" },
@@ -330,11 +348,16 @@ const playerData = [
         { name: "第103集", url: "https://cdn.wlcdn88.com:777/20220527/XCTpjlHt/index.m3u8" },
         { name: "第104集", url: "https://cdn.wlcdn88.com:777/20220527/4eWd86ef/index.m3u8" },
         { name: "第105集", url: "https://cdn.wlcdn88.com:777/20220527/TafqmEBq/index.m3u8" }
+        ]
+      }
     ]
   },
   {
     title: "新白娘子传奇",
-    episodes: [
+    channels: [
+      {
+        name: "卧龙资源",
+        episodes: [
       { name: "第01集", url: "https://cdn.wlcdn88.com:777/20220506/aHrf9z48/index.m3u8" },
       { name: "第02集", url: "https://cdn.wlcdn88.com:777/20220506/l9tX5xXX/index.m3u8" },
       { name: "第03集", url: "https://cdn.wlcdn88.com:777/20220506/3vL9yjO2/index.m3u8" },
@@ -385,6 +408,8 @@ const playerData = [
       { name: "第48集", url: "https://cdn.wlcdn88.com:777/20220506/6eu8T07K/index.m3u8" },
       { name: "第49集", url: "https://cdn.wlcdn88.com:777/20220506/umoQf3Ei/index.m3u8" },
       { name: "第50集", url: "https://cdn.wlcdn88.com:777/20220506/t0Jn003B/index.m3u8" }
+        ]
+      }
     ]
   }
 ];

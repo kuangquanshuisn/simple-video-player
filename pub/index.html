@@ -270,7 +270,59 @@
     font-weight: 600;
     color: var(--text-primary);
   }
-  
+
+  /* --- 渠道选择器样式 --- */
+  .channel-selector {
+    max-width: 1000px;
+    width: 100%;
+    margin: var(--spacing-4) auto var(--spacing-2);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3) 0;
+  }
+
+  .channel-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 15px;
+    white-space: nowrap;
+  }
+
+  .channel-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+    flex: 1;
+  }
+
+  .channel-btn {
+    padding: var(--spacing-2) var(--spacing-4);
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-container);
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    min-width: 80px;
+    text-align: center;
+  }
+
+  .channel-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-1px);
+  }
+
+  .channel-btn.active {
+    background-color: var(--primary-color);
+    color: var(--text-light);
+    border-color: var(--primary-color);
+    font-weight: 600;
+  }
+
   .episode-list {
     display: flex;
     flex-wrap: wrap;
@@ -553,6 +605,11 @@
         <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto" playsinline webkit-playsinline></video>
         <div id="restore-overlay"></div>
       </div>
+      <!-- 渠道选择器 -->
+      <div id="channel-selector" class="channel-selector" style="display: none;">
+        <div class="channel-label">播放线路：</div>
+        <div id="channel-buttons" class="channel-buttons"></div>
+      </div>
       <div id="episode-list" class="episode-list"></div>
       <div id="empty-state" class="empty-state" style="display: none;">
         <p>还没有添加任何视频</p>
@@ -568,6 +625,7 @@
     let seriesData = [];
     let currentSeriesIndex = 0;
     let currentEpisodeIndex = 0;
+    let currentChannelIndex = 0;  // 新增：跟踪当前渠道
 
     // 修改后的加载数据函数 - 每次都重新合并data.js内容
     function loadSeriesData() {
@@ -705,7 +763,7 @@
           if (seriesData.length > 0) {
             currentSeriesIndex = Math.min(currentSeriesIndex, seriesData.length - 1);
             displayEpisodes(currentSeriesIndex);
-            playEpisode(currentSeriesIndex, 0);
+            playEpisode(currentSeriesIndex, 0, 0);
           } else {
             showEmptyState();
           }
@@ -742,7 +800,7 @@
           if (seriesData.length > 0) {
             currentSeriesIndex = Math.min(currentSeriesIndex, seriesData.length - 1);
             displayEpisodes(currentSeriesIndex);
-            playEpisode(currentSeriesIndex, 0);
+            playEpisode(currentSeriesIndex, 0, 0);
           } else {
             showEmptyState();
           }
@@ -791,10 +849,10 @@
 
           if (lastPlayed) {
             // 如果找到了播放记录，则从记录处继续播放
-            playEpisode(index, lastPlayed.episodeIndex, lastPlayed.time);
+            playEpisode(index, lastPlayed.channelIndex, lastPlayed.episodeIndex, lastPlayed.time);
           } else {
             // 如果没有找到记录，则从第一集开始播放
-            playEpisode(index, 0);
+            playEpisode(index, 0, 0);
           }
         });
         seriesListEl.appendChild(li);
@@ -822,8 +880,11 @@
 
       if (lastPlayed) {
         // 确保该剧集仍然存在于数据中
-        if (seriesData[lastPlayed.seriesIndex] && seriesData[lastPlayed.seriesIndex].episodes[lastPlayed.episodeIndex]) {
+        if (seriesData[lastPlayed.seriesIndex] &&
+            seriesData[lastPlayed.seriesIndex].channels[lastPlayed.channelIndex] &&
+            seriesData[lastPlayed.seriesIndex].channels[lastPlayed.channelIndex].episodes[lastPlayed.episodeIndex]) {
           return {
+            channelIndex: lastPlayed.channelIndex,
             episodeIndex: lastPlayed.episodeIndex,
             time: lastPlayed.currentTime
           };
@@ -910,10 +971,10 @@
           currentSeriesIndex = newSeriesIndex;
           currentEpisodeIndex = 0;
           displayEpisodes(newSeriesIndex);
-          
+
           // 如果有播放器实例，开始播放
           if (window.player) {
-            playEpisode(newSeriesIndex, 0);
+            playEpisode(newSeriesIndex, 0, 0);
           }
           
           alert('视频系列添加成功！');
@@ -1145,33 +1206,39 @@
         if (isNaN(time) || time < 1) return;
         const progress = {
           seriesIndex: currentSeriesIndex,
+          channelIndex: currentChannelIndex,
           episodeIndex: currentEpisodeIndex,
           time: time,
         };
         localStorage.setItem('playbackProgress', JSON.stringify(progress));
-        
+
         // 同时保存到播放历史
-        saveToHistory(currentSeriesIndex, currentEpisodeIndex, time);
+        saveToHistory(currentSeriesIndex, currentChannelIndex, currentEpisodeIndex, time);
       }
       
-            function saveToHistory(seriesIdx, episodeIdx, time) {
-        if (!seriesData[seriesIdx] || !seriesData[seriesIdx].episodes[episodeIdx]) return;
-        
+            function saveToHistory(seriesIdx, channelIdx, episodeIdx, time) {
+        if (!seriesData[seriesIdx] ||
+            !seriesData[seriesIdx].channels[channelIdx] ||
+            !seriesData[seriesIdx].channels[channelIdx].episodes[episodeIdx]) return;
+
         const series = seriesData[seriesIdx];
-        const episode = series.episodes[episodeIdx];
+        const channel = series.channels[channelIdx];
+        const episode = channel.episodes[episodeIdx];
         const duration = player.duration() || 0;
-        
+
         const historyItem = {
           seriesIndex: seriesIdx,
+          channelIndex: channelIdx,
           episodeIndex: episodeIdx,
           seriesTitle: series.title,
+          channelName: channel.name,
           episodeName: episode.name,
           currentTime: time,
           duration: duration,
           timestamp: Date.now(),
           watchDate: new Date().toLocaleDateString('zh-CN')
         };
-        
+
         let history = [];
         try {
           const savedHistory = localStorage.getItem('playHistory');
@@ -1183,22 +1250,24 @@
         }
 
         // 查找是否已存在相同剧集的记录
-        const existingIndex = history.findIndex(item => 
-          item.seriesIndex === seriesIdx && item.episodeIndex === episodeIdx
+        const existingIndex = history.findIndex(item =>
+          item.seriesIndex === seriesIdx &&
+          item.channelIndex === channelIdx &&
+          item.episodeIndex === episodeIdx
         );
-        
+
         // 如果找到了，先从原来的位置删除它
         if (existingIndex >= 0) {
           history.splice(existingIndex, 1);
         }
-        
+
         // 总是将最新的记录添加到数组的最前面 (置顶)
-        history.unshift(historyItem);        
+        history.unshift(historyItem);
         // 限制历史记录数量，最多保存50条
         if (history.length > 50) {
           history = history.slice(0, 50);
         }
-        
+
         localStorage.setItem('playHistory', JSON.stringify(history));
       }
       
@@ -1222,8 +1291,9 @@
         
         // 过滤掉已删除的视频记录
         history = history.filter(item => {
-          return seriesData[item.seriesIndex] && 
-                 seriesData[item.seriesIndex].episodes[item.episodeIndex];
+          return seriesData[item.seriesIndex] &&
+                 seriesData[item.seriesIndex].channels[item.channelIndex] &&
+                 seriesData[item.seriesIndex].channels[item.channelIndex].episodes[item.episodeIndex];
         });
         
         // 更新过滤后的历史记录
@@ -1244,20 +1314,20 @@
           
           historyItem.innerHTML = `
             <div class="history-title">${item.seriesTitle}</div>
-            <div class="history-episode">${item.episodeName}</div>
+            <div class="history-episode">${item.channelName} - ${item.episodeName}</div>
             <div class="history-progress">
               <span>播放至 ${currentTimeStr} / ${durationStr} (${progressPercent}%)</span>
               <span class="history-time">${item.watchDate}</span>
             </div>
           `;
-          
+
           historyItem.addEventListener('click', () => {
             // 切换回视频列表tab
             switchTab('series');
-            
+
             // 播放历史记录中的剧集
             setTimeout(() => {
-              playEpisode(item.seriesIndex, item.episodeIndex, item.currentTime);
+              playEpisode(item.seriesIndex, item.channelIndex, item.episodeIndex, item.currentTime);
               displayEpisodes(item.seriesIndex);
             }, 100);
           });
@@ -1269,10 +1339,11 @@
       /**
        * 查找特定剧集的播放历史记录
        * @param {number} seriesIdx - 系列的索引
+       * @param {number} channelIdx - 渠道的索引
        * @param {number} episodeIdx - 剧集的索引
        * @returns {number|null} - 返回播放时间（秒），如果没找到或已播放完则返回null
        */
-      function findHistoryForEpisode(seriesIdx, episodeIdx) {
+      function findHistoryForEpisode(seriesIdx, channelIdx, episodeIdx) {
         let history = [];
         try {
           const savedHistory = localStorage.getItem('playHistory');
@@ -1283,22 +1354,24 @@
           console.error('加载播放历史(用于查找特定剧集)失败:', e);
           return null;
         }
-        
+
         // 查找完全匹配的剧集历史
-        const historyEntry = history.find(item => 
-          item.seriesIndex === seriesIdx && item.episodeIndex === episodeIdx
+        const historyEntry = history.find(item =>
+          item.seriesIndex === seriesIdx &&
+          item.channelIndex === channelIdx &&
+          item.episodeIndex === episodeIdx
         );
-        
+
         if (historyEntry) {
           // 如果播放进度超过95%，则认为已经看完，从头开始播放更好
           if (historyEntry.duration > 0 && (historyEntry.currentTime / historyEntry.duration) > 0.95) {
-            console.log(`剧集(${seriesIdx}, ${episodeIdx})已播放超过95%，将从头开始。`);
-            return null; 
+            console.log(`剧集(${seriesIdx}, ${channelIdx}, ${episodeIdx})已播放超过95%，将从头开始。`);
+            return null;
           }
-          console.log(`找到剧集(${seriesIdx}, ${episodeIdx})的历史记录，时间点: ${historyEntry.currentTime}`);
+          console.log(`找到剧集(${seriesIdx}, ${channelIdx}, ${episodeIdx})的历史记录，时间点: ${historyEntry.currentTime}`);
           return historyEntry.currentTime;
         }
-        
+
         // 没有找到该剧集的历史记录
         return null;
       }
@@ -1320,28 +1393,34 @@
         return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
       }
 
-      function playEpisode(seriesIdx, episodeIdx, startTime = null) {
-        if (!seriesData[seriesIdx] || !seriesData[seriesIdx].episodes[episodeIdx]) {
+      function playEpisode(seriesIdx, channelIdx, episodeIdx, startTime = null) {
+        if (!seriesData[seriesIdx] ||
+            !seriesData[seriesIdx].channels[channelIdx] ||
+            !seriesData[seriesIdx].channels[channelIdx].episodes[episodeIdx]) {
           console.error('视频不存在');
           return;
         }
-        
+
         restoreOverlay.style.display = 'none';
         currentSeriesIndex = seriesIdx;
+        currentChannelIndex = channelIdx;
         currentEpisodeIndex = episodeIdx;
         pendingSeekTime = startTime;
-        
-        const episode = seriesData[seriesIdx].episodes[episodeIdx];
-        
-        // 更新合并标题：{视频系列}-{剧集}
-        const seriesTitle = seriesData[seriesIdx].title;
-        combinedTitleEl.textContent = `${seriesTitle} - ${episode.name}`;
-        
-        player.src({ 
-          src: episode.url, 
-          type: episode.url.includes('.m3u8') ? 'application/x-mpegURL' : 'video/mp4' 
+
+        const series = seriesData[seriesIdx];
+        const channel = series.channels[channelIdx];
+        const episode = channel.episodes[episodeIdx];
+
+        // 更新合并标题：{视频系列} [{线路名}] - {剧集}
+        const seriesTitle = series.title;
+        const channelInfo = series.channels.length > 1 ? ` [${channel.name}]` : '';
+        combinedTitleEl.textContent = `${seriesTitle}${channelInfo} - ${episode.name}`;
+
+        player.src({
+          src: episode.url,
+          type: episode.url.includes('.m3u8') ? 'application/x-mpegURL' : 'video/mp4'
         });
-        
+
         if (startTime !== null) {
           // 如果有指定开始时间，等待元数据加载后处理
           player.one('loadedmetadata', () => {
@@ -1359,7 +1438,7 @@
         } else {
           player.play();
         }
-        
+
         updateActiveStates();
       }
 
@@ -1368,20 +1447,26 @@
 
       function displayEpisodes(seriesIdx) {
         if (!seriesData[seriesIdx]) return;
-        
+
         currentSeriesIndex = seriesIdx;
         const series = seriesData[seriesIdx];
+
+        // 渲染渠道选择器
+        renderChannelSelector(seriesIdx);
+
+        // 从当前渠道获取剧集
+        const currentChannel = series.channels[currentChannelIndex];
         episodeListEl.innerHTML = '';
-        
+
         // 检查是否为data.js中的系列
         let dataJsCount = 0;
         if (typeof playerData !== 'undefined' && Array.isArray(playerData)) {
           dataJsCount = playerData.length;
         }
         const isFromDataJs = seriesIdx < dataJsCount;
-        
+
         // 添加剧集按钮
-        series.episodes.forEach((episode, index) => {
+        currentChannel.episodes.forEach((episode, index) => {
           const btn = document.createElement('button');
           btn.className = 'episode-btn';
           btn.innerHTML = `
@@ -1391,14 +1476,14 @@
           btn.addEventListener('click', (e) => {
             if (e.target.className !== 'episode-delete') {
               // 先查找这一集的播放历史时间
-              const historyTime = findHistoryForEpisode(seriesIdx, index);
+              const historyTime = findHistoryForEpisode(seriesIdx, currentChannelIndex, index);
               // 将找到的时间(或null)传递给播放函数
-              playEpisode(seriesIdx, index, historyTime);
+              playEpisode(seriesIdx, currentChannelIndex, index, historyTime);
             }
           });
           episodeListEl.appendChild(btn);
-      });
-        
+        });
+
         // 只对用户添加的系列显示"添加剧集"按钮
         if (!isFromDataJs) {
           const addBtn = document.createElement('button');
@@ -1409,12 +1494,66 @@
           });
           episodeListEl.appendChild(addBtn);
         }
-        
+
         updateActiveStates();
       }
 
       // 将displayEpisodes设为全局函数
       window.displayEpisodes = displayEpisodes;
+
+      // 渠道管理函数
+      function renderChannelSelector(seriesIdx) {
+        const channelSelectorEl = document.getElementById('channel-selector');
+        const channelButtonsEl = document.getElementById('channel-buttons');
+        const series = seriesData[seriesIdx];
+
+        // 只有一个渠道时隐藏选择器
+        if (series.channels.length <= 1) {
+          channelSelectorEl.style.display = 'none';
+          currentChannelIndex = 0;
+          return;
+        }
+
+        // 显示并渲染渠道按钮
+        channelSelectorEl.style.display = 'flex';
+        channelButtonsEl.innerHTML = '';
+
+        series.channels.forEach((channel, index) => {
+          const btn = document.createElement('button');
+          btn.className = 'channel-btn';
+          btn.textContent = channel.name;
+          btn.addEventListener('click', () => switchChannel(seriesIdx, index));
+          channelButtonsEl.appendChild(btn);
+        });
+
+        updateChannelActiveState();
+      }
+
+      function switchChannel(seriesIdx, channelIdx) {
+        // 保存当前播放时间
+        const currentTime = player.currentTime();
+
+        currentChannelIndex = channelIdx;
+
+        // 检查新渠道是否有当前剧集
+        const newChannel = seriesData[seriesIdx].channels[channelIdx];
+        if (currentEpisodeIndex >= newChannel.episodes.length) {
+          currentEpisodeIndex = 0;
+        }
+
+        // 重新渲染剧集列表
+        displayEpisodes(seriesIdx);
+
+        // 从相同时间点播放新渠道的视频
+        playEpisode(seriesIdx, channelIdx, currentEpisodeIndex, currentTime);
+      }
+
+      function updateChannelActiveState() {
+        const channelButtons = document.querySelectorAll('.channel-btn');
+        channelButtons.forEach((btn, index) => {
+          btn.classList.toggle('active', index === currentChannelIndex);
+        });
+      }
 
       // 将一些函数设为全局，供HTML中的onclick使用
       window.deleteEpisode = function(seriesIdx, episodeIdx, event) {
@@ -1449,12 +1588,12 @@
             }
           } else {
             saveSeriesData();
-            
+
             // 重新显示剧集列表
             if (seriesIdx === currentSeriesIndex) {
-              currentEpisodeIndex = Math.min(currentEpisodeIndex, seriesData[seriesIdx].episodes.length - 1);
+              currentEpisodeIndex = Math.min(currentEpisodeIndex, seriesData[seriesIdx].channels[currentChannelIndex].episodes.length - 1);
               displayEpisodes(seriesIdx);
-              playEpisode(seriesIdx, currentEpisodeIndex);
+              playEpisode(seriesIdx, currentChannelIndex, currentEpisodeIndex);
             }
           }
         }
@@ -1467,13 +1606,16 @@
             li.classList.toggle('active', index === currentSeriesIndex);
           }
         });
-        
+
         // 更新剧集列表的活跃状态
         Array.from(episodeListEl.children).forEach((btn, index) => {
           if (btn.className.includes('episode-btn')) {
             btn.classList.toggle('active', index === currentEpisodeIndex);
           }
         });
+
+        // 更新渠道按钮状态
+        updateChannelActiveState();
       }
 
       // 将updateActiveStates设为全局函数
@@ -1507,13 +1649,14 @@
         if (shouldRestore) {
           // 恢复之前的播放进度
           currentSeriesIndex = savedProgress.seriesIndex;
+          currentChannelIndex = savedProgress.channelIndex;
           currentEpisodeIndex = savedProgress.episodeIndex;
           displayEpisodes(currentSeriesIndex);
-          playEpisode(currentSeriesIndex, currentEpisodeIndex, savedProgress.time);
+          playEpisode(currentSeriesIndex, currentChannelIndex, currentEpisodeIndex, savedProgress.time);
         } else {
           // 从第一集开始
           displayEpisodes(0);
-          playEpisode(0, 0);
+          playEpisode(0, 0, 0);
         }
       }
 
@@ -1538,11 +1681,11 @@
       // 视频播放结束，自动播放下一集
       player.on('ended', function() {
         const nextEpisodeIndex = currentEpisodeIndex + 1;
-        const totalEpisodes = seriesData[currentSeriesIndex].episodes.length;
+        const totalEpisodes = seriesData[currentSeriesIndex].channels[currentChannelIndex].episodes.length;
         if (nextEpisodeIndex < totalEpisodes) {
-          playEpisode(currentSeriesIndex, nextEpisodeIndex);
+          playEpisode(currentSeriesIndex, currentChannelIndex, nextEpisodeIndex);
         } else {
-          localStorage.removeItem('playbackProgress'); 
+          localStorage.removeItem('playbackProgress');
         }
       });
     }
