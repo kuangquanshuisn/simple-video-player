@@ -1484,6 +1484,11 @@
               // 切换集数时立即测速
               if (window.SpeedTest && typeof window.SpeedTest.testAllChannelSpeeds === 'function') {
                 window.SpeedTest.testAllChannelSpeeds(true);
+
+                // 重置定时器，避免短时间内重复测速
+                if (typeof window.SpeedTest.resetSpeedTestTimer === 'function') {
+                  window.SpeedTest.resetSpeedTestTimer();
+                }
               }
             }
           });

@@ -273,6 +273,20 @@
     }
   }
 
+  // 重置定时器（用于切换集数后重新计时）
+  function resetSpeedTestTimer() {
+    if (speedTestTimer) {
+      clearInterval(speedTestTimer);
+    }
+
+    // 重新设置定时器，10分钟后执行
+    speedTestTimer = setInterval(() => {
+      testAllChannelSpeeds();
+    }, SPEED_UPDATE_INTERVAL);
+
+    console.log('测速定时器已重置，10分钟后执行下次测速');
+  }
+
   // 设置UI更新回调
   function setUpdateCallback(callback) {
     updateCallback = callback;
@@ -286,6 +300,7 @@
     // 调度器控制
     startSpeedTestScheduler: startSpeedTestScheduler,
     stopSpeedTestScheduler: stopSpeedTestScheduler,
+    resetSpeedTestTimer: resetSpeedTestTimer,
 
     // UI更新回调
     setUpdateCallback: setUpdateCallback,
