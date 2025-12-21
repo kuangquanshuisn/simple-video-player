@@ -157,7 +157,7 @@
   }
 
   // 测试所有渠道速度
-  async function testAllChannelSpeeds() {
+  async function testAllChannelSpeeds(force = false) {
     if (!getSeriesDataFunc || !getCurrentEpisodeIndexFunc) {
       console.error('未设置数据获取函数');
       return;
@@ -181,7 +181,7 @@
         const lastSpeed = getChannelSpeed(series.title, channel.name);
         const now = Date.now();
 
-        if (!lastSpeed || (now - lastSpeed.timestamp) > SPEED_UPDATE_INTERVAL) {
+        if (force || !lastSpeed || (now - lastSpeed.timestamp) > SPEED_UPDATE_INTERVAL) {
           // 使用当前正在播放的集数
           const episodeIdx = currentEpisodeIndex;
 
@@ -194,6 +194,9 @@
             if (speed !== null) {
               saveChannelSpeed(series.title, channel.name, speed, episodeIdx, channelIdx);
               successCount++;
+            } else {
+              // 保存失败状态为 0
+              saveChannelSpeed(series.title, channel.name, 0, episodeIdx, channelIdx);
             }
 
             // 每次测速后延迟，避免过载

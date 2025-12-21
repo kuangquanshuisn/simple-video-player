@@ -1480,6 +1480,11 @@
               const historyTime = findHistoryForEpisode(seriesIdx, currentChannelIndex, index);
               // 将找到的时间(或null)传递给播放函数
               playEpisode(seriesIdx, currentChannelIndex, index, historyTime);
+
+              // 切换集数时立即测速
+              if (window.SpeedTest && typeof window.SpeedTest.testAllChannelSpeeds === 'function') {
+                window.SpeedTest.testAllChannelSpeeds(true);
+              }
             }
           });
           episodeListEl.appendChild(btn);
@@ -1527,7 +1532,7 @@
           const speedInfo = window.SpeedTest.getChannelSpeed(series.title, channel.name);
           let displayText = channel.name;
 
-          if (speedInfo && speedInfo.speed) {
+          if (speedInfo && speedInfo.speed !== undefined) {
             displayText += ` (${speedInfo.speed} KB/s)`;
           } else {
             displayText += ' (测速中...)';
