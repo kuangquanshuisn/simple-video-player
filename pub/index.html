@@ -1696,7 +1696,8 @@
         // 启动速度测试调度器
         window.SpeedTest.startSpeedTestScheduler(
           () => seriesData,  // 获取系列数据
-          () => currentEpisodeIndex  // 获取当前集数
+          () => currentEpisodeIndex,  // 获取当前集数
+          () => currentSeriesIndex  // 获取当前电视剧索引
         );
       }
 

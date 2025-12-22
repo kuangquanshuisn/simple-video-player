@@ -16,6 +16,7 @@
   let updateCallback = null;
   let getSeriesDataFunc = null;
   let getCurrentEpisodeIndexFunc = null;
+  let getCurrentSeriesIndexFunc = null;  // 新增：获取当前电视剧索引的函数
 
   // ========== 数据管理函数 ==========
 
@@ -167,23 +168,35 @@
 
   // 测试所有渠道速度
   async function testAllChannelSpeeds(force = false) {
-    if (!getSeriesDataFunc || !getCurrentEpisodeIndexFunc) {
+    if (!getSeriesDataFunc || !getCurrentEpisodeIndexFunc || !getCurrentSeriesIndexFunc) {
       console.error('未设置数据获取函数');
       return;
     }
 
     const seriesData = getSeriesDataFunc();
     const currentEpisodeIndex = getCurrentEpisodeIndexFunc();
+    const currentSeriesIndex = getCurrentSeriesIndexFunc();
 
-    // 如果是强制测速，先清除所有渠道的缓存数据
+    // 边界检查：确保当前电视剧索引有效
+    if (currentSeriesIndex < 0 || currentSeriesIndex >= seriesData.length) {
+      console.error('当前电视剧索引无效:', currentSeriesIndex);
+      return;
+    }
+
+    const currentSeries = seriesData[currentSeriesIndex];
+
+    // 边界检查：确保当前电视剧有渠道
+    if (!currentSeries.channels || currentSeries.channels.length === 0) {
+      console.warn('当前电视剧没有可用渠道');
+      return;
+    }
+
+    // 如果是强制测速，先清除当前电视剧的所有渠道缓存数据
     if (force) {
-      console.log('强制测速：清除所有渠道缓存...');
-      for (let seriesIdx = 0; seriesIdx < seriesData.length; seriesIdx++) {
-        const series = seriesData[seriesIdx];
-        for (let channelIdx = 0; channelIdx < series.channels.length; channelIdx++) {
-          const channel = series.channels[channelIdx];
-          clearChannelSpeed(series.title, channel.name);
-        }
+      console.log('强制测速：清除当前电视剧的所有渠道缓存...');
+      for (let channelIdx = 0; channelIdx < currentSeries.channels.length; channelIdx++) {
+        const channel = currentSeries.channels[channelIdx];
+        clearChannelSpeed(currentSeries.title, channel.name);
       }
       // 立即更新UI显示"测速中..."
       if (updateCallback && typeof updateCallback === 'function') {
@@ -191,42 +204,42 @@
       }
     }
 
-    console.log('开始批量测速...');
+    console.log(`开始测速 [${currentSeries.title}] 第${currentEpisodeIndex + 1}集...`);
     const startTime = Date.now();
     let testedCount = 0;
     let successCount = 0;
 
-    for (let seriesIdx = 0; seriesIdx < seriesData.length; seriesIdx++) {
-      const series = seriesData[seriesIdx];
+    // 只遍历当前电视剧的渠道
+    for (let channelIdx = 0; channelIdx < currentSeries.channels.length; channelIdx++) {
+      const channel = currentSeries.channels[channelIdx];
 
-      for (let channelIdx = 0; channelIdx < series.channels.length; channelIdx++) {
-        const channel = series.channels[channelIdx];
+      // 检查是否需要更新
+      const lastSpeed = getChannelSpeed(currentSeries.title, channel.name);
+      const now = Date.now();
 
-        // 检查是否需要更新
-        const lastSpeed = getChannelSpeed(series.title, channel.name);
-        const now = Date.now();
+      if (force || !lastSpeed || (now - lastSpeed.timestamp) > SPEED_UPDATE_INTERVAL) {
+        // 使用当前正在播放的集数
+        const episodeIdx = currentEpisodeIndex;
 
-        if (force || !lastSpeed || (now - lastSpeed.timestamp) > SPEED_UPDATE_INTERVAL) {
-          // 使用当前正在播放的集数
-          const episodeIdx = currentEpisodeIndex;
+        // 边界检查：确保当前集数在该渠道中存在
+        if (channel.episodes && channel.episodes[episodeIdx]) {
+          testedCount++;
+          console.log(`测速 [${testedCount}]: ${currentSeries.title} - ${channel.name} - 第${episodeIdx + 1}集`);
 
-          if (channel.episodes[episodeIdx]) {
-            testedCount++;
-            console.log(`测速 [${testedCount}]: ${series.title} - ${channel.name} - 第${episodeIdx + 1}集`);
+          const speed = await measureChannelSpeed(channel.episodes[episodeIdx].url);
 
-            const speed = await measureChannelSpeed(channel.episodes[episodeIdx].url);
-
-            if (speed !== null) {
-              saveChannelSpeed(series.title, channel.name, speed, episodeIdx, channelIdx);
-              successCount++;
-            } else {
-              // 保存失败状态为 0
-              saveChannelSpeed(series.title, channel.name, 0, episodeIdx, channelIdx);
-            }
-
-            // 每次测速后延迟，避免过载
-            await sleep(TEST_DELAY);
+          if (speed !== null) {
+            saveChannelSpeed(currentSeries.title, channel.name, speed, episodeIdx, channelIdx);
+            successCount++;
+          } else {
+            // 保存失败状态为 0
+            saveChannelSpeed(currentSeries.title, channel.name, 0, episodeIdx, channelIdx);
           }
+
+          // 每次测速后延迟，避免过载
+          await sleep(TEST_DELAY);
+        } else {
+          console.warn(`渠道 ${channel.name} 没有第${episodeIdx + 1}集，跳过测速`);
         }
       }
     }
@@ -241,10 +254,11 @@
   }
 
   // 启动定时测速
-  function startSpeedTestScheduler(getSeriesData, getCurrentEpisodeIndex) {
+  function startSpeedTestScheduler(getSeriesData, getCurrentEpisodeIndex, getCurrentSeriesIndex) {
     // 保存数据获取函数
     getSeriesDataFunc = getSeriesData;
     getCurrentEpisodeIndexFunc = getCurrentEpisodeIndex;
+    getCurrentSeriesIndexFunc = getCurrentSeriesIndex;
 
     // 停止现有定时器
     if (speedTestTimer) {
