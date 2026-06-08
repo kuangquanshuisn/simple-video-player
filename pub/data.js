@@ -169,5 +169,68 @@ const playerData = [
         ]
       }
     ]
+  },
+  {
+    title: "还珠格格",
+    channels: [
+      {
+        name: "暴风资源",
+        episodes: [
+      { name: "第01集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第01集/index.m3u8" },
+      { name: "第02集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第02集/index.m3u8" },
+      { name: "第03集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第03集/index.m3u8" },
+      { name: "第04集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第04集/index.m3u8" },
+      { name: "第05集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第05集/index.m3u8" },
+      { name: "第06集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第06集/index.m3u8" },
+      { name: "第07集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第07集/index.m3u8" },
+      { name: "第08集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第08集/index.m3u8" },
+      { name: "第09集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第09集/index.m3u8" },
+      { name: "第10集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第10集/index.m3u8" },
+      { name: "第11集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第11集/index.m3u8" },
+      { name: "第12集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第12集/index.m3u8" },
+      { name: "第13集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第13集/index.m3u8" },
+      { name: "第14集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第14集/index.m3u8" },
+      { name: "第15集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第15集/index.m3u8" },
+      { name: "第16集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第16集/index.m3u8" },
+      { name: "第17集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第17集/index.m3u8" },
+      { name: "第18集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第18集/index.m3u8" },
+      { name: "第19集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第19集/index.m3u8" },
+      { name: "第20集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第20集/index.m3u8" },
+      { name: "第21集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第21集/index.m3u8" },
+      { name: "第22集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第22集/index.m3u8" },
+      { name: "第23集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第23集/index.m3u8" },
+      { name: "第24集", url: "https://c1.rrcdnbf3.com/video/huanzhugege/第24集/index.m3u8" }
+        ]
+      },
+      {
+        name: "如意资源",
+        episodes: [
+      { name: "第01集", url: "https://cdn3.ryplay3.com/20240804/1886_45f27f9b/index.m3u8" },
+      { name: "第02集", url: "https://cdn3.ryplay3.com/20240804/1892_847aa1ce/index.m3u8" },
+      { name: "第03集", url: "https://cdn3.ryplay3.com/20240804/1897_5a9c8986/index.m3u8" },
+      { name: "第04集", url: "https://cdn3.ryplay3.com/20240804/1904_d541dce3/index.m3u8" },
+      { name: "第05集", url: "https://cdn3.ryplay3.com/20240804/1910_c621101f/index.m3u8" },
+      { name: "第06集", url: "https://cdn3.ryplay3.com/20240804/1916_d3c3fb02/index.m3u8" },
+      { name: "第07集", url: "https://cdn3.ryplay3.com/20240804/1920_f7759c7d/index.m3u8" },
+      { name: "第08集", url: "https://cdn3.ryplay3.com/20240804/1926_963ecd49/index.m3u8" },
+      { name: "第09集", url: "https://cdn3.ryplay3.com/20240804/1933_ef4d52da/index.m3u8" },
+      { name: "第10集", url: "https://cdn3.ryplay3.com/20240804/1937_a034231c/index.m3u8" },
+      { name: "第11集", url: "https://cdn3.ryplay3.com/20240804/1941_caf8db0c/index.m3u8" },
+      { name: "第12集", url: "https://cdn3.ryplay3.com/20240804/1946_17df4ce0/index.m3u8" },
+      { name: "第13集", url: "https://cdn3.ryplay3.com/20240804/1949_65ea3c3d/index.m3u8" },
+      { name: "第14集", url: "https://cdn3.ryplay3.com/20240804/1951_876a56d3/index.m3u8" },
+      { name: "第15集", url: "https://cdn3.ryplay3.com/20240804/1956_544c9daa/index.m3u8" },
+      { name: "第16集", url: "https://cdn3.ryplay3.com/20240804/1958_f2677bc5/index.m3u8" },
+      { name: "第17集", url: "https://cdn3.ryplay3.com/20240804/1962_2824765e/index.m3u8" },
+      { name: "第18集", url: "https://cdn3.ryplay3.com/20240804/1967_fee7973d/index.m3u8" },
+      { name: "第19集", url: "https://cdn3.ryplay3.com/20240804/1972_391061d6/index.m3u8" },
+      { name: "第20集", url: "https://cdn3.ryplay3.com/20240804/1977_3979e882/index.m3u8" },
+      { name: "第21集", url: "https://cdn3.ryplay3.com/20240804/1991_df07b757/index.m3u8" },
+      { name: "第22集", url: "https://cdn3.ryplay3.com/20240804/2001_144a3ba0/index.m3u8" },
+      { name: "第23集", url: "https://cdn2.ryplay2.com/20240812/3339_78add3ea/index.m3u8" },
+      { name: "第24集", url: "https://cdn3.ryplay3.com/20240804/2034_e391e154/index.m3u8" }
+        ]
+      }
+    ]
   }
 ];
